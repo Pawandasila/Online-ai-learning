@@ -27,6 +27,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import AddNewCourse from "./AddNewCourse";
 
 const item = [
   {
@@ -59,26 +60,11 @@ const Application = [
   },
 ];
 
-const sidebarVariants = {
-  expanded: {
-    width: "240px",
-    transition: { duration: 0.3 },
-  },
-  collapsed: {
-    width: "72px",
-    transition: { duration: 0.3 },
-  },
-};
-
-const fadeInVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: 0.3 } },
-  exit: { opacity: 0, transition: { duration: 0.2 } },
-};
-
 export function AppSidebar() {
   const pathname = usePathname();
   const { open } = useSidebar();
+
+  //   const {user}
 
   return (
     <Sidebar collapsible="icon" variant="floating" className="">
@@ -99,7 +85,7 @@ export function AppSidebar() {
               initial={{ opacity: 0, x: -5 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -5 }}
-              className="from-primary to-primary/70 ml-3 bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent"
+              className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent"
             >
               SkillSprint
             </motion.h1>
@@ -196,16 +182,16 @@ export function AppSidebar() {
               <div className="h-4"></div>
               {open && (
                 <SidebarMenuItem>
-                  <Link href={"/create"}>
+                  <AddNewCourse>
                     <Button
                       variant="outline"
                       className="hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 w-fit justify-start gap-2 text-sm transition-all duration-200 dark:hover:text-white"
                       size="sm"
                     >
                       <Plus className="size-4" />
-                      Create Projects
+                      Create Course
                     </Button>
-                  </Link>
+                  </AddNewCourse>
                 </SidebarMenuItem>
               )}
             </SidebarMenu>
@@ -213,7 +199,40 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter />
+      <SidebarFooter className="border-t border-gray-200 dark:border-gray-800">
+        {open ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center px-4 py-3 space-x-3"
+          >
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white shadow-sm"
+            >
+              N
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: -5 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-sm font-medium"
+            >
+              {}
+            </motion.div>
+          </motion.div>
+        ) : (
+          <div className="flex justify-center py-3">
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white shadow-sm cursor-pointer"
+            >
+              N
+            </motion.div>
+          </div>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }
