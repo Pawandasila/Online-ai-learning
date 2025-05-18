@@ -18,9 +18,6 @@ Topic under each chapter
 Duration for each chapter
 
 🧾 Schema (JSON format):
-json
-Copy
-Edit
 {
   "course": {
     "name": "string",
@@ -28,5 +25,19 @@ Edit
     "noOfModules": "number",
     "difficultyLevel": "beginner | intermediate | advanced",
     "categories": ["string"],
+    "courseBannerPrompt": "string",
   }
 }`
+
+export const CHAPTER_PROMPT = `Depends on Chapter names and Topics generate content and give response in JSON format.
+
+Schema:{
+chapterName : <>,
+{
+topic:<>,
+content:<>
+}
+}
+
+: userInput : 
+`

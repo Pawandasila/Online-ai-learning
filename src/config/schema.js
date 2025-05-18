@@ -1,4 +1,12 @@
-import { integer, pgTable, varchar, json, boolean, text } from "drizzle-orm/pg-core";
+import {
+  integer,
+  pgTable,
+  varchar,
+  json,
+  boolean,
+  text,
+  bigint
+} from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -16,10 +24,11 @@ export const coursesTable = pgTable("courses", {
   difficultyLevel: varchar({ length: 50 }),
   categories: text(),
   includeVideo: boolean().default(false),
-  courseJson : json(),
-  userId: integer()
+  courseJson: json(),
+  bannerImageUrl: text(),
+  userId: varchar()
     .notNull()
-    .references(() => usersTable.id, { onDelete: "cascade" }),
-  createdAt: integer().notNull(),
-  updatedAt: integer().notNull(),
+    .references(() => usersTable.email, { onDelete: "cascade" }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
 });

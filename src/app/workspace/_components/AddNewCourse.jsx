@@ -11,11 +11,13 @@ import AIForm from "./AIForm";
 import { BookOpen } from "lucide-react";
 import axios from "axios";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 const AddNewCourse = ({ children }) => {
 
   const [loading, setLoading] = useState(false);
   const {user} = useUser();
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
     courseName: "",
@@ -24,6 +26,7 @@ const AddNewCourse = ({ children }) => {
     difficultyLevel: "",
     categories: "",
     includeVideo: false,
+    userId : ""
   });
 
   const handleInputChange = (e) => {
@@ -34,13 +37,14 @@ const AddNewCourse = ({ children }) => {
   const handleSubmit = async()=>{
     setLoading(true);
     console.log(formData);
+    
 
     try {
       const result = await axios.post("/api/generateCourse", {
         ...formData,
-        userId : user.userId,
+        userId: user.emailAddresses[0].emailAddress,
       });
-      console.log(result)
+      router.push("/workspace/edit-course" + `/${result.data.data.cid}`);
       
     } catch (error) {
       console.error(error);

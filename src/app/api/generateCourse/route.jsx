@@ -1,98 +1,146 @@
 import { GoogleGenAI } from "@google/genai";
 import { PROMPT } from "@/config/ai-prompt";
 import { db } from "@/config/db";
+import { coursesTable } from "@/config/schema";
+import axios from "axios";
 
 export async function POST(req) {
-  const {
-    name,
-    description,
-    noOfModules,
-    difficultyLevel,
-    categories,
-    includeVideo,
-    userId,
-  } = await req.json();
+  const formData = await req.json();
 
-  const courseJson = {
-    name,
-    description,
-    noOfModules,
-    difficultyLevel,
-    categories,
-    includeVideo,
-  };
+  // Validate userId early
+  if (!formData.userId) {
+    return new Response(
+      JSON.stringify({
+        error: "User ID is required",
+        details: "A valid user ID must be provided to create a course",
+      }),
+      { status: 400 }
+    );
+  }
 
   const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
   });
-  
+
   const config = {
     responseMimeType: "text/plain",
   };
-  
+
   // Use gemini-2.0-flash model
-  const model = 'gemini-2.0-flash';
-  
+  const model = "gemini-2.0-flash";
+
   const contents = [
     {
       role: "user",
       parts: [
         {
-          text: PROMPT + JSON.stringify(courseJson),
+          text: PROMPT + JSON.stringify(formData),
         },
       ],
     },
   ];
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await ai.models.generateContent({  
       model,
       config,
       contents,
     });
 
-    // Log the response structure to understand its format
-    console.log("Response structure:", JSON.stringify(response));
-    
-    // Extract the text from the response based on the structure
-    let responseText = '';
-    
+    let responseText = "";
+
     // For Gemini 2.0 models - directly access the text property
     if (response.candidates && response.candidates[0].content.parts[0].text) {
       responseText = response.candidates[0].content.parts[0].text;
-    } else if (response.text && typeof response.text === 'function') {
-      // Only call response.text() if it's a function
-      responseText = response.text();
-    } else if (response.response && response.response.text) {
-      // For some Gemini models
-      responseText = response.response.text;
     } else {
       // Fallback
       responseText = JSON.stringify(response);
     }
-    
-    
-    // Store in database
-    // if (db && userId) {
-    //   await db.insert(coursesTable).values({
-    //     ...courseJson,
-    //     courseJson: responseText,
-    //     userId: userId,
-    //     cid: `course-${Date.now()}`,
-    //     createdAt: Date.now(),
-    //     updatedAt: Date.now(),
-    //   });
-    // }
-    
-    return new Response(JSON.stringify({ success: true, data: responseText }));
+
+    const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+
+    // Fallback: try to find first { and last }
+    let jsonString;
+
+    if (jsonMatch && jsonMatch[1]) {
+      jsonString = jsonMatch[1];
+    } else {
+      const start = responseText.indexOf("{");
+      const end = responseText.lastIndexOf("}");
+      if (start !== -1 && end !== -1 && end > start) {
+        jsonString = responseText.slice(start, end + 1);
+      } else {
+        throw new Error("Valid JSON not found in Gemini response.");
+      }
+    }
+
+    // Parse safely
+    const parsedJson = JSON.parse(jsonString);
+    const ImagePrompt = parsedJson.course.courseBannerPrompt;
+    console.log(parsedJson.course.courseBannerPrompt)
+
+    const bannerImage = await generateImage(ImagePrompt);
+
+    // Map form data fields to schema fields
+    const courseData = {
+      // Map the form fields to the schema fields
+      name: formData.courseName,
+      description: formData.courseDescription,
+      noOfModules: parseInt(formData.moduleCount) || 1,
+      difficultyLevel: formData.difficultyLevel,
+      categories: formData.categories,
+      includeVideo: formData.includeVideo || false,
+      userId: formData.userId,
+      courseJson: parsedJson,
+      bannerImageUrl: bannerImage,
+      cid: `course-${Date.now()}`,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    // console.log(courseData)
+
+    // Validate required fields
+    if (!courseData.name) {
+      throw new Error("Course name is required");
+    }
+
+    if (!courseData.userId) {
+      throw new Error("User ID is required");
+    }
+
+    await db.insert(coursesTable).values(courseData);
+
+    return new Response(JSON.stringify({ success: true, data: courseData }));
   } catch (error) {
     console.error("Error generating content:", error);
     return new Response(
       JSON.stringify({
         error: "Failed to generate course content",
-        details: error.message
+        details: error.message,
       }),
       { status: 500 }
     );
   }
 }
+
+const generateImage = async (ImagePrompt) => {
+  const BASE_URL = "https://aigurulab.tech";
+  const result = await axios.post(
+    BASE_URL + "/api/generate-image",
+    {
+      width: 1024,
+      height: 1024,
+      input: ImagePrompt,
+      model: "flux",
+      aspectRatio: "16:9", 
+    },
+    {
+      headers: {
+        "x-api-key": process?.env?.AI_GURU_LAB_API, // Your API Key
+        "Content-Type": "application/json", // Content Type
+      },
+    }
+  );
+  console.log(result.data.image);
+  return result.data.image;
+};
