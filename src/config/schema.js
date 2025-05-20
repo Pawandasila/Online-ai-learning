@@ -33,3 +33,12 @@ export const coursesTable = pgTable("courses", {
   createdAt: bigint("createdAt", { mode: "number" }).notNull(),
   updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
 });
+
+export const enrollCourseTable = pgTable('enrollCourses',{
+  id:integer().primaryKey().generatedAlwaysAsIdentity(),
+  cid:varchar({length:255}).notNull().references(()=> coursesTable.cid , {onDelete : 'cascade'}),
+  userEmail:varchar({length:255}).notNull().references(()=> usersTable.email,{onDelete:'cascade'}),
+  status:varchar().default(true),
+  completedChapters:json().default([]),
+  progress:varchar().default(0),
+})

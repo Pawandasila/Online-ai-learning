@@ -8,11 +8,11 @@ import {
   Clock,
   Users,
   BarChart,
+  Wand2,
 } from "lucide-react";
 import Link from "next/link";
 
 const CourseCard = ({ course }) => {
-  
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -86,24 +86,49 @@ const CourseCard = ({ course }) => {
   const moduleCount =
     course?.noOfModules || course?.courseJson?.course?.noOfModules || 0;
 
-  const getTotalHours = () => {
-    if (course?.courseJson?.course?.modules) {
-      let totalMinutes = 0;
-      course.courseJson.course.modules.forEach((module) => {
-        if (module.duration) {
-          const durationStr = module.duration;
-          const hours = durationStr.includes("hour")
-            ? parseInt(durationStr.split(" ")[0])
-            : 0;
-          totalMinutes += hours * 60;
+  // Check if courseContent exists and is not empty
+  const hasCourseContent =
+    course?.courseContent?.enrichedModules &&
+    course.courseContent.enrichedModules.length > 0;
+
+  // Get number of chapters from courseContent if available
+  const getChapterCount = () => {
+    if (hasCourseContent) {
+      let totalChapters = 0;
+      course.courseContent.enrichedModules.forEach((module) => {
+        if (module.chapters && Array.isArray(module.chapters)) {
+          totalChapters += module.chapters.length;
         }
       });
-      return (totalMinutes / 60).toFixed(1);
+      return totalChapters;
     }
-    return moduleCount * 2; 
+    return 0;
   };
 
-  
+  const chapterCount = getChapterCount();
+
+  const getTotalHours = () => {
+    try {
+      if (course?.courseJson?.course?.modules && Array.isArray(course.courseJson.course.modules)) {
+        let totalMinutes = 0;
+        course.courseJson.course.modules.forEach((module) => {
+          if (module && module.duration) {
+            const durationStr = module.duration;
+            const hours = durationStr.includes("hour")
+              ? parseInt(durationStr.split(" ")[0])
+              : 0;
+            totalMinutes += hours * 60;
+          }
+        });
+        return (totalMinutes / 60).toFixed(1);
+      }
+      return moduleCount * 2;
+    } catch (error) {
+      console.log("Error calculating course hours:", error);
+      return moduleCount * 2; // Fallback to default calculation
+    }
+  };
+
   const progress = 0;
 
   const colorClasses = getDifficultyColor(difficultyLevel);
@@ -122,7 +147,7 @@ const CourseCard = ({ course }) => {
           whileHover={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          {course.bannerImageUrl ? (
+          {course?.bannerImageUrl ? (
             <img
               src={course.bannerImageUrl}
               alt={courseName}
@@ -159,7 +184,13 @@ const CourseCard = ({ course }) => {
             <Clock className="w-4 h-4 mr-1" />
             <span>{getTotalHours()} Hours</span>
           </div>
-          <div className="flex items-center text-gray-600 text-sm col-span-2">
+          {hasCourseContent && chapterCount > 0 && (
+            <div className="flex items-center text-gray-600 text-sm">
+              <BarChart className="w-4 h-4 mr-1" />
+              <span>{chapterCount} Chapters</span>
+            </div>
+          )}
+          <div className="flex items-center text-gray-600 text-sm">
             <BarChart className="w-4 h-4 mr-1" />
             <span>{categories}</span>
           </div>
@@ -184,14 +215,34 @@ const CourseCard = ({ course }) => {
           </div>
         )}
 
-        <Link href={`/courses/${course.id}`}>
+        <Link
+          href={
+            !hasCourseContent
+              ? `/workspace/edit-course/${course?.cid }`
+              : `/courses/${course?.cid || ''}`
+          }
+        >
           <motion.button
             className={`w-full py-3 rounded-lg text-white font-medium flex items-center justify-center ${colorClasses.button} transition-colors duration-200`}
             variants={buttonVariants}
             whileTap={{ scale: 0.98 }}
           >
-            {progress > 0 ? "Continue Learning" : "Start Learning"}
-            <ArrowRight className="ml-2 w-4 h-4" />
+            {!hasCourseContent ? (
+              <>
+                Generate Course
+                <Wand2 className="ml-2 w-4 h-4" />
+              </>
+            ) : progress > 0 ? (
+              <>
+                Continue Learning
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </>
+            ) : (
+              <>
+                Start Learning
+                <Play className="ml-2 w-4 h-4" />
+              </>
+            )}
           </motion.button>
         </Link>
       </div>

@@ -1,5 +1,6 @@
-"use client";
-import React, { useState, useEffect } from "react";
+'use client';
+
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import CourseCard from "./CourseCard";
 import { Plus, Loader2 } from "lucide-react";
@@ -11,12 +12,14 @@ import CourseListLoading from "./CourseListLoading";
 
 const CourseList = () => {
   const [courseList, setCourseList] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { isLoaded, user } = useUser();
 
   useEffect(() => {
     if (isLoaded && user) {
       getCourse();
+    } else if (isLoaded && !user) {
+      setLoading(false);
     }
   }, [isLoaded, user]);
 
@@ -26,6 +29,7 @@ const CourseList = () => {
 
     try {
       const response = await axios.get("/api/courses");
+      console.log(response.data)
 
       if (Array.isArray(response.data)) {
         setCourseList(response.data);
@@ -34,16 +38,16 @@ const CourseList = () => {
           toast.success(`Loaded ${response.data.length} courses`);
         }
       } else {
-        // console.error("Expected an array of courses but got:", response.data);
         toast.dismiss(toastId);
         toast.error("Failed to load courses properly");
       }
     } catch (error) {
-      // console.error("Error fetching courses:", error);
       toast.dismiss(toastId);
       toast.error("Error loading courses");
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000); // Increased delay to ensure skeleton animations are visible
     }
   };
 
@@ -67,6 +71,30 @@ const CourseList = () => {
 
   return (
     <div className="p-4">
+      {/* Global CSS for shimmer effect */}
+      <style jsx global>{`
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+        
+        .shimmer {
+          animation: shimmer 2s infinite linear;
+          background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+          background-size: 1000px 100%;
+          height: 100%;
+          width: 100%;
+          position: absolute;
+          top: 0;
+          left: 0;
+          z-index: 1;
+        }
+      `}</style>
+
       <motion.h2
         className="font-bold text-3xl mb-6"
         initial={{ opacity: 0, y: -20 }}
@@ -83,8 +111,7 @@ const CourseList = () => {
           initial="hidden"
           animate="visible"
         >
-          {/* Display multiple skeleton cards */}
-          {[...Array(6)].map((_, index) => (
+          {[...Array(3)].map((_, index) => (
             <motion.div
               key={`skeleton-${index}`}
               variants={{

@@ -13,6 +13,7 @@ export default function Page() {
   const getCourseInfo = async () => {
     try {
       const result = await axios.get("/api/courses?cid=" + cid);
+      console.log(result.data)
       setCourseInfo(result.data);
     } catch (error) {
       setError("Error fetching course info");
