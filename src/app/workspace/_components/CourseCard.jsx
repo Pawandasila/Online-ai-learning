@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -11,8 +11,51 @@ import {
   Wand2,
 } from "lucide-react";
 import Link from "next/link";
+import axios from "axios";
+import { toast } from "sonner";
 
 const CourseCard = ({ course }) => {
+  const [loading, setLoading] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(course?.progress > 0);
+
+  const onEnroll = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const toastId = toast.loading(
+      "Enrolling you into the AI course content...",
+      {
+        description: "This may take a few minutes. Please wait.",
+      }
+    );
+
+    try {
+      setLoading(true);
+      const result = await axios.post(`/api/enroll-course`, {
+        courseId: course.cid,
+      });
+
+      toast.dismiss(toastId);
+      toast.success("Enrolled Successfully!", {
+        description: "You have successfully enrolled in the course!",
+      });
+      if (result?.data.message === "Already enrolled") {
+        toast.info("Already enrolled", {
+          description: "You are already enrolled in this course.",
+        });
+        return;
+      }
+      setIsEnrolled(true);
+    } catch (error) {
+      toast.dismiss(toastId);
+
+      console.error("error", error);
+      toast.error(error?.response?.data?.message || "Something went wrong!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -109,7 +152,10 @@ const CourseCard = ({ course }) => {
 
   const getTotalHours = () => {
     try {
-      if (course?.courseJson?.course?.modules && Array.isArray(course.courseJson.course.modules)) {
+      if (
+        course?.courseJson?.course?.modules &&
+        Array.isArray(course.courseJson.course.modules)
+      ) {
         let totalMinutes = 0;
         course.courseJson.course.modules.forEach((module) => {
           if (module && module.duration) {
@@ -125,11 +171,11 @@ const CourseCard = ({ course }) => {
       return moduleCount * 2;
     } catch (error) {
       console.log("Error calculating course hours:", error);
-      return moduleCount * 2; // Fallback to default calculation
+      return moduleCount * 2;
     }
   };
 
-  const progress = 0;
+  const progress = course?.progress || 0;
 
   const colorClasses = getDifficultyColor(difficultyLevel);
 
@@ -215,36 +261,46 @@ const CourseCard = ({ course }) => {
           </div>
         )}
 
-        <Link
-          href={
-            !hasCourseContent
-              ? `/workspace/edit-course/${course?.cid }`
-              : `/courses/${course?.cid || ''}`
-          }
-        >
+        {!hasCourseContent ? (
+          <Link href={`/workspace/edit-course/${course?.cid}`}>
+            <motion.button
+              className={`w-full py-2 rounded-lg text-white font-medium flex items-center justify-center ${colorClasses.button} transition-colors duration-200`}
+              variants={buttonVariants}
+              whileTap={{ scale: 0.98 }}
+            >
+              Generate Course
+              <Wand2 className="ml-2 w-4 h-4" />
+            </motion.button>
+          </Link>
+        ) : isEnrolled || progress > 0 ? (
+          <Link href={`/courses/${course?.cid || ""}`}>
+            <motion.button
+              className={`w-full py-2 rounded-lg text-white font-medium flex items-center justify-center ${colorClasses.button} transition-colors duration-200`}
+              variants={buttonVariants}
+              whileTap={{ scale: 0.98 }}
+            >
+              Start Learning
+              <Play className="ml-2 w-4 h-4" />
+            </motion.button>
+          </Link>
+        ) : (
           <motion.button
-            className={`w-full py-3 rounded-lg text-white font-medium flex items-center justify-center ${colorClasses.button} transition-colors duration-200`}
+            onClick={onEnroll}
+            disabled={loading}
+            className={`w-full py-2 rounded-lg text-white font-medium flex items-center justify-center ${colorClasses.button} transition-colors duration-200`}
             variants={buttonVariants}
             whileTap={{ scale: 0.98 }}
           >
-            {!hasCourseContent ? (
-              <>
-                Generate Course
-                <Wand2 className="ml-2 w-4 h-4" />
-              </>
-            ) : progress > 0 ? (
-              <>
-                Continue Learning
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </>
+            {loading ? (
+              "Enrolling..."
             ) : (
               <>
-                Start Learning
-                <Play className="ml-2 w-4 h-4" />
+                Enroll Now
+                <ArrowRight className="ml-2 w-4 h-4" />
               </>
             )}
           </motion.button>
-        </Link>
+        )}
       </div>
     </motion.div>
   );

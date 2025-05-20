@@ -12,7 +12,7 @@ const WelcomeBanner = () => {
         </div>
         <div className="flex gap-2">
           <button className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md text-sm font-medium transition-colors">
-            New Project
+            New Course
           </button>
         </div>
       </div>

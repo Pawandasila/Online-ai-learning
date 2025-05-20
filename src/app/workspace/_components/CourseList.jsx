@@ -71,29 +71,6 @@ const CourseList = () => {
 
   return (
     <div className="p-4">
-      {/* Global CSS for shimmer effect */}
-      <style jsx global>{`
-        @keyframes shimmer {
-          0% {
-            background-position: -1000px 0;
-          }
-          100% {
-            background-position: 1000px 0;
-          }
-        }
-        
-        .shimmer {
-          animation: shimmer 2s infinite linear;
-          background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
-          background-size: 1000px 100%;
-          height: 100%;
-          width: 100%;
-          position: absolute;
-          top: 0;
-          left: 0;
-          z-index: 1;
-        }
-      `}</style>
 
       <motion.h2
         className="font-bold text-3xl mb-6"

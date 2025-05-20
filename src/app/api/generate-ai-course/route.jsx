@@ -6,6 +6,9 @@ import axios from "axios";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
+// Helper function to wait for a specified time
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const YOUTUBE_BASE_URL = "https://www.googleapis.com/youtube/v3/search";
 
 const getYouTubeVideo = async (topic) => {
@@ -85,17 +88,52 @@ export async function POST(req) {
           },
         ];
 
-        const response = await ai.models.generateContent({
-          model,
-          config,
-          contents,
-        });
+        // Implement retry logic with exponential backoff
+        let response;
+        let responseText;
+        let retries = 0;
+        const maxRetries = 5;
+        let lastError;
 
-        const responseText =
-          response?.candidates?.[0]?.content?.parts?.[0]?.text;
+        while (retries < maxRetries) {
+          try {
+            response = await ai.models.generateContent({
+              model,
+              config,
+              contents,
+            });
 
+            responseText = response?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (responseText) {
+              // Success! Break out of the retry loop
+              break;
+            } else {
+              throw new Error("No content returned from Gemini");
+            }
+          } catch (error) {
+            lastError = error;
+            retries++;
+            
+            // Log the retry attempt
+            console.log(`Retry attempt ${retries}/${maxRetries} for module: ${module.moduleName}`);
+            
+            if (retries >= maxRetries) {
+              console.error("Max retries reached for Gemini API call");
+              break;
+            }
+
+            // Calculate exponential backoff delay: 2^retries * 1000ms + random jitter
+            const delay = Math.min(2 ** retries * 1000 + Math.random() * 1000, 10000);
+            console.log(`Waiting ${delay}ms before next retry...`);
+            await sleep(delay);
+          }
+        }
+
+        // If we've exhausted all retries and still don't have a response
         if (!responseText) {
-          throw new Error("No content returned from Gemini");
+          console.error("Failed to get response after multiple retries:", lastError);
+          throw new Error(`Failed to generate content after ${maxRetries} retries: ${lastError?.message || "Unknown error"}`);
         }
 
         // Extract JSON
@@ -196,12 +234,25 @@ export async function POST(req) {
   } catch (error) {
     console.error("AI content processing error:", error.message);
     console.error("Error stack:", error.stack);
+    
+    // Determine if this is a service overload error
+    const isOverloaded = error.message && (
+      error.message.includes("503 Service Unavailable") || 
+      error.message.includes("overloaded") ||
+      error.message.includes("UNAVAILABLE")
+    );
+    
     return NextResponse.json(
       {
         error: "AI Generation Failed",
         details: error.message || "Unknown error occurred",
+        isOverloaded: isOverloaded,
+        retryAdvised: isOverloaded,
+        suggestion: isOverloaded ? 
+          "The AI service is currently experiencing high demand. Please try again in a few minutes." : 
+          "Please check your course structure and try again."
       },
-      { status: 500 }
+      { status: isOverloaded ? 503 : 500 }
     );
   }
 }

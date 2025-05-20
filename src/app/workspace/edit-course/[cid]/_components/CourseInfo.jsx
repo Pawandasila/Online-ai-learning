@@ -80,9 +80,25 @@ const CourseInfo = ({ course, loading, error }) => {
     } catch (err) {
       // Dismiss the loading toast and show error
       toast.dismiss(toastId);
-      toast.error("Failed to generate course", {
-        description: err.response?.data?.details || err.message || "An unknown error occurred"
-      });
+      
+      const responseData = err.response?.data;
+      const isOverloaded = responseData?.isOverloaded;
+      
+      if (isOverloaded) {
+        toast.error("AI Service Temporarily Unavailable", {
+          description: responseData?.suggestion || "The AI service is currently experiencing high demand. Please try again in a few minutes.",
+          duration: 6000,
+          action: {
+            label: "Retry",
+            onClick: () => generateCourseContent()
+          }
+        });
+      } else {
+        toast.error("Failed to generate course", {
+          description: responseData?.details || err.message || "An unknown error occurred"
+        });
+      }
+      
       console.error("Generation error:", err);
     } finally {
       setLoadingInfo(false);

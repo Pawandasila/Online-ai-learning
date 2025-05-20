@@ -1,6 +1,6 @@
 import React from "react";
 
-import { BellRing, Moon, Search, Settings, Sun } from "lucide-react";
+import { Search } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 

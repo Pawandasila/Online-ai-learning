@@ -20,7 +20,7 @@ const WorkSpaceProvider = ({ children }) => {
         {show && <WelcomeBanner />}
 
         <div
-          className={`h-[calc(100vh-6rem)] overflow-y-scroll rounded-md border border-sidebar-border bg-sidebar p-4 shadow ${
+          className={`h-[calc(100vh-6rem)] overflow-y-scroll rounded-md border border-sidebar-border bg-sidebar shadow ${
             !show ? "mt-4 mb-4" : ""
           }`}
         >
