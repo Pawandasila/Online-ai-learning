@@ -19,12 +19,15 @@ import {
 } from "lucide-react";
 import LoadingComponent from "../loading";
 import axios from "axios";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const CourseInfo = ({ course, loading, error }) => {
   const [expandedModule, setExpandedModule] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
   const moduleRefs = useRef([]);
   const [loadingInfo, setLoadingInfo] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (expandedModule !== null && moduleRefs.current[expandedModule]) {
@@ -41,13 +44,7 @@ const CourseInfo = ({ course, loading, error }) => {
 
   const courseData = course?.courseJson?.course;
 
-  if (!courseData)
-    return (
-      <div className="p-6 bg-yellow-50 text-yellow-600 rounded-lg">
-        No course data available
-      </div>
-    );
-
+  
   const toggleModule = (index) => {
     if (expandedModule === index) {
       setExpandedModule(null);
@@ -58,12 +55,32 @@ const CourseInfo = ({ course, loading, error }) => {
   };
 
   const generateCourseContent = async () => {
+    // Create a loading toast and get its ID
+    const toastId = toast.loading("Generating AI course content...", {
+      description: "This may take a few minutes. Please wait."
+    });
+    
     try {
       setLoadingInfo(true);
+      
+      // Start the API request to generate course content
       const result = await axios.post("/api/generate-ai-course", { course });
-      console.log(result);
+      
+      // Dismiss the loading toast and show success
+      toast.dismiss(toastId);
+      toast.success("Course generated successfully!", {
+        description: "Redirecting to your workspace..."
+      });
+      
+      console.log("Generation result:", result.data);
+      router.push('/workspace');
     } catch (err) {
-      console.error(err);
+      // Dismiss the loading toast and show error
+      toast.dismiss(toastId);
+      toast.error("Failed to generate course", {
+        description: err.response?.data?.details || err.message || "An unknown error occurred"
+      });
+      console.error("Generation error:", err);
     } finally {
       setLoadingInfo(false);
     }
@@ -98,6 +115,9 @@ const CourseInfo = ({ course, loading, error }) => {
         return total + hours;
       }, 0)
     : 0;
+
+    
+
   return (
     <motion.div
       className="max-w-6xl mx-auto"
@@ -105,7 +125,7 @@ const CourseInfo = ({ course, loading, error }) => {
       animate="visible"
       variants={containerVariants}
     >
-      {/* Course Header with Banner */}
+    
       <div className="relative h-64 md:h-80 overflow-hidden rounded-xl shadow-lg mb-8">
         <motion.img
           src={course.bannerImageUrl || "/default-course-banner.jpg"}

@@ -2,13 +2,51 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import CourseCard from "./CourseCard";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import AddNewCourse from "./AddNewCourse";
+import axios from "axios";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
+import CourseListLoading from "./CourseListLoading";
 
 const CourseList = () => {
   const [courseList, setCourseList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { isLoaded, user } = useUser();
 
-  // Container animation
+  useEffect(() => {
+    if (isLoaded && user) {
+      getCourse();
+    }
+  }, [isLoaded, user]);
+
+  const getCourse = async () => {
+    setLoading(true);
+    const toastId = toast.loading("Loading your courses...");
+
+    try {
+      const response = await axios.get("/api/courses");
+
+      if (Array.isArray(response.data)) {
+        setCourseList(response.data);
+        toast.dismiss(toastId);
+        if (response.data.length > 0) {
+          toast.success(`Loaded ${response.data.length} courses`);
+        }
+      } else {
+        // console.error("Expected an array of courses but got:", response.data);
+        toast.dismiss(toastId);
+        toast.error("Failed to load courses properly");
+      }
+    } catch (error) {
+      // console.error("Error fetching courses:", error);
+      toast.dismiss(toastId);
+      toast.error("Error loading courses");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -19,8 +57,16 @@ const CourseList = () => {
     },
   };
 
+  if (!isLoaded) {
+    return (
+      <div className="p-4 flex justify-center items-center min-h-[300px]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 ">
+    <div className="p-4">
       <motion.h2
         className="font-bold text-3xl mb-6"
         initial={{ opacity: 0, y: -20 }}
@@ -30,7 +76,31 @@ const CourseList = () => {
         My Learning Journey
       </motion.h2>
 
-      {courseList.length > 0 ? (
+      {loading ? (
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Display multiple skeleton cards */}
+          {[...Array(6)].map((_, index) => (
+            <motion.div
+              key={`skeleton-${index}`}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.3, delay: index * 0.05 }
+                }
+              }}
+            >
+              <CourseListLoading />
+            </motion.div>
+          ))}
+        </motion.div>
+      ) : courseList.length > 0 ? (
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           variants={containerVariants}

@@ -1,10 +1,12 @@
 import { CHAPTER_PROMPT } from "@/config/ai-prompt";
+import { db } from "@/config/db";
+import { coursesTable } from "@/config/schema";
 import { GoogleGenAI } from "@google/genai";
 import axios from "axios";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 const YOUTUBE_BASE_URL = "https://www.googleapis.com/youtube/v3/search";
-
 
 const getYouTubeVideo = async (topic) => {
   try {
@@ -17,8 +19,25 @@ const getYouTubeVideo = async (topic) => {
     };
 
     const res = await axios.get(YOUTUBE_BASE_URL, { params });
-    // console.log(res.data.items)
-    return res?.data?.items || [];
+    const YouTubeVideoList = [];
+
+    // Check if items exists and is an array before using forEach
+    if (res.data && Array.isArray(res.data.items)) {
+      res.data.items.forEach((item) => {
+        if (item && item.id && item.snippet) {
+          const data = {
+            videoId: item.id.videoId,
+            title: item.snippet.title,
+          };
+          YouTubeVideoList.push(data);
+        }
+      });
+    } else {
+      console.log("No valid YouTube items found in response");
+    }
+
+    // console.log("YouTubeVideoList", YouTubeVideoList);
+    return YouTubeVideoList;
   } catch (error) {
     console.error("YouTube fetch error:", error.message);
     return [];
@@ -57,7 +76,7 @@ export async function POST(req) {
 
     const enrichedModules = await Promise.all(
       course.modules.map(async (module) => {
-        console.log(module.moduleName)
+        // console.log(module.moduleName)
         const promptContent = CHAPTER_PROMPT + JSON.stringify(module);
         const contents = [
           {
@@ -81,46 +100,106 @@ export async function POST(req) {
 
         // Extract JSON
         let jsonString;
-        const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
-        if (jsonMatch && jsonMatch[1]) {
-          jsonString = jsonMatch[1];
-        } else {
-          const start = responseText.indexOf("{");
-          const end = responseText.lastIndexOf("}");
-          if (start !== -1 && end !== -1 && end > start) {
-            jsonString = responseText.slice(start, end + 1);
-          } else {
-            throw new Error("Valid JSON not found in Gemini response.");
-          }
-        }
-
         let parsedJson;
+
         try {
-          parsedJson = JSON.parse(jsonString);
+          // First try to extract JSON from code blocks
+          const jsonMatch = responseText.match(
+            /```(?:json)?\s*([\s\S]*?)\s*```/
+          );
+          if (jsonMatch && jsonMatch[1]) {
+            jsonString = jsonMatch[1].trim();
+
+            // Try to parse the extracted JSON
+            try {
+              parsedJson = JSON.parse(jsonString);
+            } catch (innerErr) {
+              console.log(
+                "Failed to parse JSON from code block, trying alternative extraction"
+              );
+            }
+          }
+
+          // If the above method failed, try to find JSON by braces
+          if (!parsedJson) {
+            const start = responseText.indexOf("{");
+            const end = responseText.lastIndexOf("}");
+
+            if (start !== -1 && end !== -1 && end > start) {
+              jsonString = responseText.slice(start, end + 1);
+              try {
+                parsedJson = JSON.parse(jsonString);
+              } catch (innerErr) {
+                console.log("Failed to parse JSON by braces");
+              }
+            }
+          }
+
+          // If all parsing attempts failed
+          if (!parsedJson) {
+            // Create a fallback JSON with the module name
+            parsedJson = {
+              title: "Generated Content",
+              content:
+                "Content could not be properly formatted. Please try again.",
+              youtubeVideos: [],
+            };
+            console.log("Using fallback JSON structure due to parsing issues");
+          }
         } catch (err) {
-          throw new Error("Failed to parse Gemini response JSON");
+          console.error("JSON extraction error:", err.message);
+          // Create a fallback JSON
+          parsedJson = {
+            title: "Generated Content",
+            content:
+              "Content could not be properly formatted. Please try again.",
+            youtubeVideos: [],
+          };
         }
 
         // Attach YouTube videos
-        const videos = await getYouTubeVideo(module?.moduleName || "programming");
-        parsedJson.youtubeVideos = videos;
+        try {
+          const moduleName = module?.moduleName || "programming";
+          // console.log("Fetching YouTube videos for:", moduleName);
+          const videos = await getYouTubeVideo(moduleName);
+          parsedJson.youtubeVideos = videos || [];
+        } catch (youtubeError) {
+          console.error(
+            "Error attaching YouTube videos:",
+            youtubeError.message
+          );
+          parsedJson.youtubeVideos = [];
+        }
 
         return parsedJson;
       })
     );
 
+    // console.log("courseTitle" , courseTitle);
+    // console.log("enrichedModules" , enrichedModules);
+
+    // Update the courseContent field instead of trying to use a non-existent enrichedModules field
+    const dbRes = await db
+      .update(coursesTable)
+      .set({
+        courseContent: { enrichedModules },
+        updatedAt: Date.now()
+      })
+      .where(eq(coursesTable.cid, cid))
+      .returning();
+
     return NextResponse.json({
       success: true,
-      cid,
       courseTitle,
       enrichedModules,
     });
   } catch (error) {
     console.error("AI content processing error:", error.message);
+    console.error("Error stack:", error.stack);
     return NextResponse.json(
       {
         error: "AI Generation Failed",
-        details: error.message,
+        details: error.message || "Unknown error occurred",
       },
       { status: 500 }
     );
