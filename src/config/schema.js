@@ -38,7 +38,9 @@ export const enrollCourseTable = pgTable('enrollCourses',{
   id:integer().primaryKey().generatedAlwaysAsIdentity(),
   cid:varchar({length:255}).notNull().references(()=> coursesTable.cid , {onDelete : 'cascade'}),
   userEmail:varchar({length:255}).notNull().references(()=> usersTable.email,{onDelete:'cascade'}),
-  status:varchar().default(true),
+  status:varchar().default('true'),
   completedChapters:json().default([]),
-  progress:varchar().default(0),
+  progress:varchar().default('0'),
+  isCompleted:boolean().default(false),
+  certificate:varchar({length:5000}),
 })

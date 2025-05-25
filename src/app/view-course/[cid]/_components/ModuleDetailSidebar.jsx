@@ -183,14 +183,13 @@ const ModuleDetailSidebar = ({
               </span>
             </div>
             <div className="space-y-3">
-              {Array.isArray(topics) && topics.length > 0 ? (
-                topics.map((topic, index) => {
+              {Array.isArray(topics) && topics.length > 0 ? (                topics.map((topic, index) => {
                   const topicTitle =
                     typeof topic === "string" ? topic : topic.topic;
 
                   return (
                     <motion.div
-                      key={index}
+                      key={`topic-${moduleIndex}-${index}-${topicTitle}`}
                       className={`p-4 rounded-xl border-l-4 ${
                         hoveredTopic === index
                           ? "border-blue-500 bg-blue-50 shadow-sm"
@@ -255,10 +254,9 @@ const ModuleDetailSidebar = ({
                   {videos.length}
                 </span>
               </div>
-              <div className="space-y-3">
-                {videos.map((video, index) => (
+              <div className="space-y-3">                {videos.map((video, index) => (
                   <motion.div
-                    key={index}
+                    key={`video-${moduleIndex}-${index}-${video.title || index}`}
                     className="p-4 rounded-xl bg-white border border-gray-100 hover:border-red-200 hover:bg-red-50 transition-all duration-300 flex items-center cursor-pointer shadow-sm hover:shadow-md group"
                     whileHover={{ y: -2, scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
@@ -311,10 +309,9 @@ const ModuleDetailSidebar = ({
                   {tags.length}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
+              <div className="flex flex-wrap gap-2">                {tags.map((tag, index) => (
                   <motion.span
-                    key={index}
+                    key={`tag-${moduleIndex}-${index}-${tag}`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="px-3 py-2 text-sm font-medium rounded-full bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-all cursor-pointer"
@@ -345,10 +342,9 @@ const ModuleDetailSidebar = ({
               <BookOpenIcon size={16} />
               <span>View Full Content</span>
             </motion.button>
-          </div>
-        </div>
+          </div>        </div>
       </motion.div>
-    </AnimatePresence>
+    </>
   );
 };
 

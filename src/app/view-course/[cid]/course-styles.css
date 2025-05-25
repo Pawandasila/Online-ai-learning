@@ -593,3 +593,71 @@
     margin-right: 0;
   }
 }
+
+/* Detail sidebar container */
+.detail-sidebar-container {
+  width: 0;
+  position: relative;
+  overflow: visible;
+  z-index: 40;
+}
+
+/* Content states for sidebar integration */
+.content-with-sidebar {
+  margin-right: 360px;
+  border-radius: 20px 0 0 20px;
+  border-right: none;
+  position: relative;
+}
+
+.content-without-sidebar {
+  margin-right: 0;
+  border-radius: 20px;
+  position: relative;
+}
+
+@media (max-width: 1023px) {
+  .content-with-sidebar,
+  .content-without-sidebar {
+    margin-right: 0;
+    border-radius: 20px;
+  }
+}
+
+/* Improved main content area for desktop sidebar integration */
+@media (min-width: 1024px) {
+  .main-content-area {
+    overflow: hidden;
+  }
+  
+  .main-content-area.has-sidebar {
+    padding-right: 0;
+  }
+}
+
+/* Enhanced glass effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom scrollbar for sidebar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}

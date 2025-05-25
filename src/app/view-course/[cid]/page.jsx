@@ -75,14 +75,27 @@ const CoursePage = () => {
   useEffect(() => {
     getEnrolledCoursesById();
   }, [cid]);
-
   const getEnrolledCoursesById = async () => {
     try {
       setLoading(true);
       const result = await axios.get(`/api/enroll-course?cid=${cid}`);
       console.log("Enrolled Courses Result:", result.data);
       if (result.data?.success && result.data.data) {
-        setEnrolledCoursesInfo(result.data.data);
+        // Transform the data structure to match what the components expect
+        const transformedData = {
+          courses: {
+            ...result.data.data,
+            courseContent: result.data.data.courseContent
+          },
+          enrollCourses: {
+            progress: result.data.data.progress,
+            completedChapters: result.data.data.completedChapters,
+            isCompleted: result.data.data.isCompleted,
+            certificate: result.data.data.certificate,
+            status: result.data.data.status
+          }
+        };
+        setEnrolledCoursesInfo(transformedData);
       } else {
         setError("No courses found");
       }
@@ -109,6 +122,39 @@ const CoursePage = () => {
       if (sidebarToggle) {
         sidebarToggle.click();
       }
+    }
+  };
+
+  // Handle chapter completion
+  const handleChapterCompletion = async (chapterIndex) => {
+    try {
+      const totalChapters = enrolledCoursesInfo?.courses?.noOfModules || 1;
+      
+      const response = await axios.put('/api/enroll-course', {
+        courseId: cid,
+        chapterIndex: chapterIndex,
+        totalChapters: totalChapters
+      });
+
+      if (response.data?.success) {
+        // Update the local state with the new progress data
+        setEnrolledCoursesInfo(prevData => ({
+          ...prevData,
+          enrollCourses: {
+            ...prevData.enrollCourses,
+            completedChapters: response.data.data.completedChapters,
+            progress: response.data.data.progress.toString(),
+            isCompleted: response.data.data.isCompleted,
+            certificate: response.data.data.certificateUrl || prevData.enrollCourses.certificate
+          }
+        }));
+
+        // Show success message
+        alert(response.data.message);
+      }
+    } catch (error) {
+      console.error('Error completing chapter:', error);
+      alert('Failed to complete chapter. Please try again.');
     }
   };
 
@@ -139,11 +185,11 @@ const CoursePage = () => {
           </div>
         ) : (          <div className="course-layout course-layout-flex">
             {/* Timeline Sidebar */}
-            <div className="sidebar-container">
-              <ChapterSidebar
+            <div className="sidebar-container">              <ChapterSidebar
                 enrolledCoursesInfo={enrolledCoursesInfo}
                 setActiveModuleDetail={setActiveModuleDetail}
                 handleSubModuleClick={handleSubModuleClick}
+                onChapterComplete={handleChapterCompletion}
               />
             </div>            {/* Main Content - seamlessly connects to module detail sidebar */}
             <motion.main
@@ -187,13 +233,13 @@ const CoursePage = () => {
                       ? 'content-with-sidebar bg-white p-6 sm:p-8 md:p-10 shadow-md border border-gray-200'
                       : 'content-without-sidebar glass-effect p-6 sm:p-8 md:p-10 shadow-xl border border-white/20'
                   }`}
-                >
-                  <CourseContent
+                >                  <CourseContent
                     courseData={enrolledCoursesInfo}
                     activeModuleIndex={activeModuleIndex}
                     activeTopicIndex={activeTopicIndex}
                     setActiveModuleIndex={setActiveModuleIndex}
                     setActiveTopicIndex={setActiveTopicIndex}
+                    onChapterComplete={handleChapterCompletion}
                   />
                 </motion.div>
               </div>
