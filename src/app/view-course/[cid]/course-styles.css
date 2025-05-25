@@ -5,6 +5,7 @@
   width: 100%;
   height: 100vh;
   overflow: hidden;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 @media (max-width: 1023px) {
@@ -15,7 +16,10 @@
 
 /* Sidebar enhancements */
 .chapter-sidebar {
-  transition: all 0.3s ease-in-out;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  border-right: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .chapter-sidebar:hover .timeline::before {
@@ -24,28 +28,43 @@
 
 /* Module detail sidebar */
 .module-detail-sidebar {
-  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.05);
+  box-shadow: -10px 0 25px rgba(0, 0, 0, 0.1), -5px 0 10px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.98);
+  border-left: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 /* Main content area */
 .main-content-area {
-  transition: all 0.3s ease-in-out;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* Content container improvements */
+.content-container {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(226, 232, 240, 0.5);
 }
 
 /* Optimized animations */
 .optimized-animation {
   will-change: transform, opacity, width;
   backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 /* Enhanced card designs */
 .enhanced-card {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .enhanced-card:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
 }
 
 .enhanced-card.with-detail {
@@ -71,6 +90,68 @@
   background: #a1a1a1;
 }
 
+/* Custom scrollbar styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.8);
+  border-radius: 10px;
+  margin: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  border-radius: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+}
+
+/* Timeline enhancements */
+.timeline {
+  position: relative;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 28px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, 
+    rgba(59, 130, 246, 0.1) 0%, 
+    rgba(59, 130, 246, 0.3) 50%, 
+    rgba(59, 130, 246, 0.1) 100%);
+  border-radius: 1px;
+  transition: opacity 0.3s ease;
+  opacity: 0.7;
+}
+
+/* Module card improvements */
+.module-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.module-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.02) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.module-header:hover::before {
+  opacity: 1;
+}
+
 /* Topic pills container */
 .topic-pills-container {
   scrollbar-width: thin;
@@ -84,12 +165,131 @@
   justify-content: center;
   height: 100vh;
   width: 100vw;
-  background: linear-gradient(to right bottom, rgba(255, 255, 255, 0.9), rgba(240, 245, 255, 0.9));
+  background: linear-gradient(135deg, 
+    rgba(248, 250, 252, 0.95) 0%, 
+    rgba(241, 245, 249, 0.95) 50%, 
+    rgba(226, 232, 240, 0.95) 100%);
+  backdrop-filter: blur(10px);
+}
+
+/* Glass effect for cards */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Gradient text effects */
+.gradient-text-blue {
+  background: linear-gradient(135deg, #3b82f6, #6366f1, #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Button hover effects */
+.button-hover-effect {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.button-hover-effect::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.button-hover-effect:hover::before {
+  opacity: 1;
 }
 
 /* Touch gesture area */
 .touch-gesture-area {
   touch-action: pan-y;
+}
+
+/* YouTube video container */
+.youtube-container {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  height: 0;
+  overflow: hidden;
+  width: 100%;
+  background: #000;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.youtube-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Animations for topic transitions */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+.topic-enter {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.topic-exit {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+/* Improved sidebar styling */
+.module-detail-sidebar {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  will-change: transform;
+}
+
+.chapter-sidebar {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  will-change: transform;
+}
+
+/* Active module styling */
+.active-module {
+  background-color: rgba(59, 130, 246, 0.08);
+  border-left: 3px solid #3b82f6;
+}
+
+/* Active topic styling */
+.active-topic {
+  background-color: rgba(59, 130, 246, 0.12);
+  border-left: 2px solid #3b82f6;
+}
+
+/* Content container styling */
+.course-content-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Notes section styling */
+.notes-section {
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.8), rgba(239, 246, 255, 0.8));
+  border-radius: 0.75rem;
+  border: 1px solid rgba(191, 219, 254, 0.5);
+  padding: 1.25rem;
+  margin-top: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
 }
 
 /* Custom prose class for course content */
@@ -161,4 +361,118 @@
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
+}
+
+/* Responsive design improvements */
+@media (max-width: 640px) {
+  .course-content-container {
+    padding: 0.75rem;
+  }
+  
+  .content-container {
+    padding: 1rem !important;
+    margin: 0.5rem;
+    border-radius: 1rem !important;
+  }
+  
+  .prose-course h1 {
+    font-size: 1.5rem;
+  }
+  
+  .prose-course h2 {
+    font-size: 1.25rem;
+  }
+  
+  .youtube-container {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    width: calc(100% + 2rem);
+  }
+  
+  .chapter-sidebar {
+    width: 90% !important;
+    max-width: 300px;
+  }
+  
+  .module-detail-sidebar {
+    width: 95% !important;
+    max-width: 320px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .content-container {
+    padding: 1.5rem !important;
+  }
+  
+  .chapter-sidebar {
+    width: 280px;
+  }
+  
+  .module-detail-sidebar {
+    width: 320px;
+  }
+}
+
+/* Layout containers */
+.sidebar-container {
+  position: relative;
+  z-index: 30;
+}
+
+.detail-sidebar-container {
+  position: relative;
+  z-index: 40;
+}
+
+/* Spring animations for sidebar elements */
+.spring-animation {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Enhanced hover effects */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Focus states for accessibility */
+.focus-visible:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* Animation classes */
+.fade-in {
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Improved border styles */
+.border-gradient {
+  border: 1px solid transparent;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, #e2e8f0, #cbd5e1) border-box;
+}
+
+/* Text selection styling */
+::selection {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #1e40af;
 }

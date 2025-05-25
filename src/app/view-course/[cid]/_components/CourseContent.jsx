@@ -13,19 +13,18 @@ import {
   ExternalLink,
   Calendar,
   Code,
-  Download,
-  Share2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const CourseContent = ({ courseData }) => {
-  const [activeModule, setActiveModule] = useState(0);
-  const [activeTopic, setActiveTopic] = useState(0);
+const CourseContent = ({ courseData, activeModuleIndex = 0, activeTopicIndex = 0, setActiveModuleIndex, setActiveTopicIndex }) => {
   const [progress, setProgress] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const contentRef = useRef(null);
   const topicPillsRef = useRef(null);
+  const [currentModule, setCurrentModule] = useState(null);
+  const [currentTopic, setCurrentTopic] = useState(null);
+  const [topics, setTopics] = useState([]);
 
   // Check if user prefers reduced motion
   useEffect(() => {
@@ -45,6 +44,27 @@ const CourseContent = ({ courseData }) => {
     }
   }, [courseData]);
 
+  // Update current module and topic when indices change
+  useEffect(() => {
+    const course = courseData?.courses || {};
+    const courseModules = course?.courseContent?.enrichedModules || [];
+    
+    if (courseModules.length > 0 && activeModuleIndex !== undefined) {
+      const module = courseModules[activeModuleIndex] || courseModules[0];
+      setCurrentModule(module);
+      
+      const moduleTopics = module.topics || module.content || [];
+      setTopics(moduleTopics);
+      
+      if (Array.isArray(moduleTopics) && moduleTopics.length > 0) {
+        const topicIndex = Math.min(activeTopicIndex || 0, moduleTopics.length - 1);
+        setCurrentTopic(moduleTopics[topicIndex]);
+      } else {
+        setCurrentTopic(null);
+      }
+    }
+  }, [courseData, activeModuleIndex, activeTopicIndex]);
+
   // Add keyboard navigation for topic pills
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -56,7 +76,7 @@ const CourseContent = ({ courseData }) => {
         const courseModules = course?.courseContent?.enrichedModules || [];
         if (courseModules.length === 0) return;
         
-        const currentModule = courseModules[activeModule] || {};
+        const currentModule = courseModules[activeModuleIndex] || {};
         const topics = currentModule.topics || currentModule.content || [];
         if (!Array.isArray(topics) || topics.length === 0) return;
         
@@ -64,21 +84,21 @@ const CourseContent = ({ courseData }) => {
         
         if (e.key === 'ArrowLeft') {
           // Go to previous topic or previous module's last topic
-          if (activeTopic > 0) {
-            setActiveTopic(activeTopic - 1);
-          } else if (activeModule > 0) {
-            const prevModuleTopics = courseModules[activeModule - 1]?.topics || 
-                                   courseModules[activeModule - 1]?.content || [];
-            setActiveModule(activeModule - 1);
-            setActiveTopic(prevModuleTopics.length - 1);
+          if (activeTopicIndex > 0) {
+            setActiveTopicIndex(activeTopicIndex - 1);
+          } else if (activeModuleIndex > 0) {
+            const prevModuleTopics = courseModules[activeModuleIndex - 1]?.topics || 
+                                   courseModules[activeModuleIndex - 1]?.content || [];
+            setActiveModuleIndex(activeModuleIndex - 1);
+            setActiveTopicIndex(prevModuleTopics.length - 1);
           }
         } else if (e.key === 'ArrowRight') {
           // Go to next topic or next module's first topic
-          if (activeTopic < topics.length - 1) {
-            setActiveTopic(activeTopic + 1);
-          } else if (activeModule < courseModules.length - 1) {
-            setActiveModule(activeModule + 1);
-            setActiveTopic(0);
+          if (activeTopicIndex < topics.length - 1) {
+            setActiveTopicIndex(activeTopicIndex + 1);
+          } else if (activeModuleIndex < courseModules.length - 1) {
+            setActiveModuleIndex(activeModuleIndex + 1);
+            setActiveTopicIndex(0);
           }
         }
       }
@@ -90,13 +110,13 @@ const CourseContent = ({ courseData }) => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeModule, activeTopic, courseData]);
+  }, [activeModuleIndex, activeTopicIndex, courseData, setActiveModuleIndex, setActiveTopicIndex]);
 
   // Update progress when module/topic changes
   useEffect(() => {
     const totalModules = courseData?.courses?.courseContent?.enrichedModules?.length || 1;
     const newProgress = Math.min(
-      Math.round(((activeModule + 1) / totalModules) * 100),
+      Math.round(((activeModuleIndex + 1) / totalModules) * 100),
       100
     );
     
@@ -106,7 +126,7 @@ const CourseContent = ({ courseData }) => {
       // Here you would normally call an API to update the progress
       // updateCourseProgress(newProgress);
     }
-  }, [activeModule, activeTopic, progress]);
+  }, [activeModuleIndex, activeTopicIndex, courseData, progress]);
 
   if (!courseData) {
     return (
@@ -147,34 +167,30 @@ const CourseContent = ({ courseData }) => {
     );
   }
 
-  const currentModule = courseModules[activeModule] || {};
-  const topics = currentModule.topics || currentModule.content || [];
-  const currentTopic = Array.isArray(topics) ? topics[activeTopic] : null;
-
   const topicContent =
     typeof currentTopic === "string"
-      ? null
+      ? currentTopic
       : currentTopic?.content || currentTopic?.topic;
   
   const nextTopic = () => {
-    if (activeTopic < topics.length - 1) {
-      setActiveTopic(activeTopic + 1);
-    } else if (activeModule < courseModules.length - 1) {
-      setActiveModule(activeModule + 1);
-      setActiveTopic(0);
+    if (activeTopicIndex < topics.length - 1) {
+      setActiveTopicIndex(activeTopicIndex + 1);
+    } else if (activeModuleIndex < courseModules.length - 1) {
+      setActiveModuleIndex(activeModuleIndex + 1);
+      setActiveTopicIndex(0);
     }
   };
 
   const prevTopic = () => {
-    if (activeTopic > 0) {
-      setActiveTopic(activeTopic - 1);
-    } else if (activeModule > 0) {
-      setActiveModule(activeModule - 1);
+    if (activeTopicIndex > 0) {
+      setActiveTopicIndex(activeTopicIndex - 1);
+    } else if (activeModuleIndex > 0) {
+      setActiveModuleIndex(activeModuleIndex - 1);
       const prevModuleTopics =
-        courseModules[activeModule - 1]?.topics ||
-        courseModules[activeModule - 1]?.content ||
+        courseModules[activeModuleIndex - 1]?.topics ||
+        courseModules[activeModuleIndex - 1]?.content ||
         [];
-      setActiveTopic(prevModuleTopics.length - 1);
+      setActiveTopicIndex(prevModuleTopics.length - 1);
     }
   };
 
@@ -221,6 +237,26 @@ const CourseContent = ({ courseData }) => {
     ));
   };
 
+  // Function to get YouTube video ID from topic
+  const getYoutubeVideoId = () => {
+    if (currentTopic?.videoId) {
+      return currentTopic.videoId;
+    }
+
+    // Check if the current module has videos and find by topic name
+    if (currentModule?.youtubeVideos && currentModule.youtubeVideos.length > 0) {
+      const topicTitle = typeof currentTopic === 'string' ? currentTopic : currentTopic?.topic;
+      const matchingVideo = currentModule.youtubeVideos.find(video => 
+        video.title && topicTitle && video.title.includes(topicTitle)
+      );
+      return matchingVideo?.videoId;
+    }
+
+    return null;
+  };
+
+  const videoId = getYoutubeVideoId();
+
   return (
     <div className="course-content-container" ref={contentRef}>
       {/* Header with module title and navigation */}
@@ -228,17 +264,17 @@ const CourseContent = ({ courseData }) => {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             <span className="text-lg font-semibold text-blue-600 block sm:inline sm:mr-2">
-              Module {activeModule + 1}:
+              Module {activeModuleIndex + 1}:
             </span>{" "}
-            {currentModule.chapterName?.replace(/Module \d+: /i, "")}
+            {currentModule?.chapterName?.replace(/Module \d+: /i, "")}
           </h1>
           
           <div className="flex items-center justify-end gap-2">
             <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
               <Clock size={14} />
-              <span>{currentModule.duration || "1-2 hours"}</span>
+              <span>{currentModule?.duration || "1-2 hours"}</span>
             </div>
-            {currentModule.youtubeVideos && currentModule.youtubeVideos.length > 0 && (
+            {currentModule?.youtubeVideos && currentModule.youtubeVideos.length > 0 && (
               <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                 <Video size={14} className="text-red-500" />
                 <span>{currentModule.youtubeVideos.length} videos</span>
@@ -253,7 +289,12 @@ const CourseContent = ({ courseData }) => {
             className="bg-blue-600 h-2 rounded-full"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            transition={{ duration: prefersReducedMotion ? 0.1 : 0.8, ease: "easeOut" }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 100, 
+              damping: 30, 
+              duration: prefersReducedMotion ? 0.1 : 0.8
+            }}
           />
         </div>
         <div className="flex justify-between text-xs text-gray-500 mb-6">
@@ -265,11 +306,11 @@ const CourseContent = ({ courseData }) => {
       {/* Topics Navigation Pills */}
       {Array.isArray(topics) && topics.length > 1 && (
         <div 
-          className="flex gap-1 mb-6 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" 
+          className="flex gap-1 mb-6 overflow-x-auto pb-2 custom-scrollbar" 
           ref={topicPillsRef}
         >
           {topics.map((topic, index) => {
-            const isActive = activeTopic === index;
+            const isActive = activeTopicIndex === index;
             const topicTitle = typeof topic === "string" ? topic : topic.topic;
             
             return (
@@ -277,7 +318,7 @@ const CourseContent = ({ courseData }) => {
                 key={index}
                 onClick={() => {
                   setIsAnimating(true);
-                  setActiveTopic(index);
+                  setActiveTopicIndex(index);
                   setTimeout(() => setIsAnimating(false), 300);
                 }}
                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
@@ -300,15 +341,21 @@ const CourseContent = ({ courseData }) => {
       <div className="content-wrapper relative">
         <AnimatePresence mode="wait">
           <motion.div
-            key={`${activeModule}-${activeTopic}`}
+            key={`${activeModuleIndex}-${activeTopicIndex}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: prefersReducedMotion ? 0.1 : 0.3 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 30, 
+              mass: 0.8,
+              duration: prefersReducedMotion ? 0.1 : 0.3 
+            }}
             className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm"
           >
             {/* Topic Content */}
-            <div className="prose prose-blue max-w-none">
+            <div className="prose prose-blue max-w-none mb-6">
               {typeof currentTopic === "string" ? (
                 <div className="text-gray-700">{currentTopic}</div>
               ) : (
@@ -321,23 +368,22 @@ const CourseContent = ({ courseData }) => {
               )}
             </div>
 
-            {/* If current topic has YouTube video */}
-            {currentTopic?.videoId && (
-              <div className="mt-8 bg-gray-50 p-5 rounded-xl border border-gray-200">
-                <h3 className="text-lg font-medium text-gray-800 mb-3 flex items-center">
-                  <Video className="h-5 w-5 text-red-500 mr-2" />
-                  Video Resource
-                </h3>
-                <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+            {/* YouTube Video */}
+            {videoId && (
+              <div className="mt-6 mb-8">
+                <div className="youtube-container">
                   <iframe
-                    className="w-full h-full"
-                    src={`https://www.youtube.com/embed/${currentTopic.videoId}`}
+                    src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&autoplay=0`}
                     title="YouTube video player"
-                    frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   ></iframe>
                 </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  {typeof currentTopic === 'string' 
+                    ? currentTopic 
+                    : currentTopic?.topic || "Video resource for this topic"}
+                </p>
               </div>
             )}
 
@@ -362,9 +408,9 @@ const CourseContent = ({ courseData }) => {
       <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
         <button
           onClick={prevTopic}
-          disabled={activeModule === 0 && activeTopic === 0}
+          disabled={activeModuleIndex === 0 && activeTopicIndex === 0}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
-            activeModule === 0 && activeTopic === 0
+            activeModuleIndex === 0 && activeTopicIndex === 0
               ? "bg-gray-100 text-gray-400 cursor-not-allowed"
               : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
           }`}
@@ -374,32 +420,15 @@ const CourseContent = ({ courseData }) => {
           Previous
         </button>
 
-        <div className="flex items-center gap-2">
-          <button
-            className="bg-blue-50 text-blue-600 hover:bg-blue-100 p-2 rounded-lg"
-            title="Share this module"
-            aria-label="Share this module"
-          >
-            <Share2 className="h-4 w-4" />
-          </button>
-          <button
-            className="bg-blue-50 text-blue-600 hover:bg-blue-100 p-2 rounded-lg"
-            title="Download resources"
-            aria-label="Download resources"
-          >
-            <Download className="h-4 w-4" />
-          </button>
-        </div>
-
         <button
           onClick={nextTopic}
           disabled={
-            activeModule === courseModules.length - 1 &&
-            activeTopic === topics.length - 1
+            activeModuleIndex === courseModules.length - 1 &&
+            activeTopicIndex === topics.length - 1
           }
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
-            activeModule === courseModules.length - 1 &&
-            activeTopic === topics.length - 1
+            activeModuleIndex === courseModules.length - 1 &&
+            activeTopicIndex === topics.length - 1
               ? "bg-gray-100 text-gray-400 cursor-not-allowed"
               : "bg-blue-600 text-white hover:bg-blue-700"
           }`}

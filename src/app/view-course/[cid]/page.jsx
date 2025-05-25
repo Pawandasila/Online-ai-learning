@@ -21,6 +21,8 @@ const CoursePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeModuleDetail, setActiveModuleDetail] = useState(null);
+  const [activeModuleIndex, setActiveModuleIndex] = useState(0);
+  const [activeTopicIndex, setActiveTopicIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -63,17 +65,12 @@ const CoursePage = () => {
 
       setIsMobile(mobile);
       setIsTablet(tablet);
-
-      // On small screens, don't show both sidebars at once
-      if ((mobile || tablet) && activeModuleDetail) {
-        // Consider if we should hide the chapter list when showing module detail
-      }
     };
 
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [activeModuleDetail]);
+  }, []);
 
   useEffect(() => {
     getEnrolledCoursesById();
@@ -99,8 +96,24 @@ const CoursePage = () => {
     }
   };
 
+  // Handle sub-module click
+  const handleSubModuleClick = (moduleIndex, topicIndex) => {
+    setActiveModuleIndex(moduleIndex);
+    setActiveTopicIndex(topicIndex);
+
+    // On mobile, close the sidebar after clicking a topic
+    if (isMobile || isTablet) {
+      const sidebarToggle = document.querySelector(
+        'button[aria-label="Close sidebar"]'
+      );
+      if (sidebarToggle) {
+        sidebarToggle.click();
+      }
+    }
+  };
+
   return (
-    <div className="course-view-container min-h-screen bg-gray-50 flex flex-col">
+    <div className="course-view-container min-h-screen flex flex-col">
       <SidebarProvider>
         {loading ? (
           <div className="loading-screen flex items-center justify-center min-h-screen">
@@ -125,48 +138,42 @@ const CoursePage = () => {
             </div>
           </div>
         ) : (
-          <div className="course-layout flex h-screen overflow-hidden">
+          <div className="course-layout flex h-screen overflow-hidden relative">
             {/* Timeline Sidebar */}
-            <ChapterSidebar
-              enrolledCoursesInfo={enrolledCoursesInfo}
-              setActiveModuleDetail={setActiveModuleDetail}
-            />
+            <div className="sidebar-container">
+              <ChapterSidebar
+                enrolledCoursesInfo={enrolledCoursesInfo}
+                setActiveModuleDetail={setActiveModuleDetail}
+                handleSubModuleClick={handleSubModuleClick}
+              />
+            </div>
 
             {/* Main Content - animates width when module detail is shown */}
             <motion.main
-              className={`main-content-area flex flex-col overflow-hidden optimized-animation ${
-                isMobile
-                  ? "w-full"
-                  : isTablet
-                  ? activeModuleDetail
-                    ? "hidden"
-                    : "w-full"
-                  : activeModuleDetail
-                  ? "w-[calc(100vw-640px)]"
-                  : "w-[calc(100vw-320px)]"
-              }`}
+              className="main-content-area flex flex-col overflow-hidden optimized-animation relative z-10"
+              initial={{ width: isMobile ? "100%" : "calc(100vw - 320px)" }}
               animate={{
                 width: isMobile
                   ? "100%"
                   : isTablet
                   ? activeModuleDetail
-                    ? "0%"
-                    : "100%"
+                    ? "calc(100vw - 660px)"
+                    : "calc(100vw - 320px)"
                   : activeModuleDetail
-                  ? "calc(100vw - 640px)"
+                  ? "calc(100vw - 660px)"
                   : "calc(100vw - 320px)",
+                x: isMobile && activeModuleDetail ? "-340px" : 0,
               }}
               transition={{
-                type: prefersReducedMotion ? "tween" : "spring",
-                stiffness: 350,
+                type: "spring",
+                stiffness: 300,
                 damping: 30,
-                duration: prefersReducedMotion ? 0.1 : undefined,
+                duration: prefersReducedMotion ? 0.1 : 0.5,
               }}
               style={{ opacity }}
             >
-              <AppHeader hideSidebar={true} />
               <div
-                className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto w-full"
+                className="flex-1 p-3 overflow-y-auto w-full custom-scrollbar"
                 ref={mainContentRef}
               >
                 <motion.div
@@ -174,31 +181,40 @@ const CoursePage = () => {
                   animate={{
                     opacity: 1,
                     y: 0,
-                    scale:
-                      activeModuleDetail && !prefersReducedMotion ? 0.98 : 1,
+                    scale: 1,
                   }}
-                  transition={{ duration: 0.4 }}
-                  className={`content-container bg-white p-5 sm:p-6 md:p-8 rounded-xl shadow-sm ${
-                    activeModuleDetail
-                      ? "with-detail border border-blue-100"
-                      : ""
-                  }`}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 30,
+                    delay: 0.1,
+                  }}
+                  className="content-container glass-effect p-6 sm:p-8 md:p-10 rounded-2xl shadow-xl border border-white/20"
                 >
-                  <CourseContent courseData={enrolledCoursesInfo} />
+                  <CourseContent
+                    courseData={enrolledCoursesInfo}
+                    activeModuleIndex={activeModuleIndex}
+                    activeTopicIndex={activeTopicIndex}
+                    setActiveModuleIndex={setActiveModuleIndex}
+                    setActiveTopicIndex={setActiveTopicIndex}
+                  />
                 </motion.div>
               </div>
             </motion.main>
 
             {/* Module Detail Sidebar - shows when a module is selected */}
-            <AnimatePresence mode="wait">
-              {activeModuleDetail && (
-                <ModuleDetailSidebar
-                  key="module-detail-sidebar"
-                  moduleDetail={activeModuleDetail}
-                  onClose={() => setActiveModuleDetail(null)}
-                />
-              )}
-            </AnimatePresence>
+            <div className="detail-sidebar-container">
+              <AnimatePresence mode="wait">
+                {activeModuleDetail && (
+                  <ModuleDetailSidebar
+                    key="module-detail-sidebar"
+                    moduleDetail={activeModuleDetail}
+                    onClose={() => setActiveModuleDetail(null)}
+                    handleSubModuleClick={handleSubModuleClick}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         )}
       </SidebarProvider>

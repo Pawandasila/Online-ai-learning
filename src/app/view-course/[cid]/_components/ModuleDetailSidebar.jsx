@@ -2,59 +2,63 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
   ChevronLeft,
-  BookOpen, 
-  Clock, 
-  Video, 
-  Tag, 
-  Download, 
-  Link as LinkIcon,
+  BookOpen,
+  Clock,
+  Video,
+  Tag,
   FileText,
   CheckCircle,
   X,
   Play,
-  BookOpen as BookOpenIcon
+  BookOpen as BookOpenIcon,
+  ArrowRight,
 } from "lucide-react";
 
-const ModuleDetailSidebar = ({ moduleDetail, onClose }) => {
+const ModuleDetailSidebar = ({
+  moduleDetail,
+  onClose,
+  handleSubModuleClick,
+}) => {
   const [isMobile, setIsMobile] = useState(false);
   const sidebarRef = useRef(null);
   const [focusIndex, setFocusIndex] = useState(0);
   const focusableElements = useRef([]);
-  
+  const [hoveredTopic, setHoveredTopic] = useState(null);
+
   // Check for mobile screens
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024);
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // Handle keyboard navigation
   useEffect(() => {
     if (!moduleDetail) return;
-    
+
     const handleKeyDown = (e) => {
       // Close on escape key
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
         return;
       }
-      
-      if (e.key === 'Tab') {
+
+      if (e.key === "Tab") {
         // Get all focusable elements inside the sidebar
         const elements = sidebarRef.current.querySelectorAll(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
-        
+
         focusableElements.current = Array.from(elements);
-        
+
         if (elements.length === 0) return;
-        
+
         // If shift+tab, move focus backward
         if (e.shiftKey) {
           if (document.activeElement === elements[0]) {
@@ -70,42 +74,53 @@ const ModuleDetailSidebar = ({ moduleDetail, onClose }) => {
         }
       }
     };
-    
+
     // Add event listener for keyboard navigation
-    document.addEventListener('keydown', handleKeyDown);
-    
+    document.addEventListener("keydown", handleKeyDown);
+
     // Set initial focus to close button
     if (sidebarRef.current) {
-      const closeButton = sidebarRef.current.querySelector('button[aria-label="Close module detail"]');
+      const closeButton = sidebarRef.current.querySelector(
+        'button[aria-label="Close module detail"]'
+      );
       if (closeButton) {
         setTimeout(() => {
           closeButton.focus();
         }, 100);
       }
     }
-    
+
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [moduleDetail, onClose]);
-  
+
   if (!moduleDetail) return null;
-  
+
   const { moduleIndex, moduleData } = moduleDetail;
   const moduleNumber = moduleIndex + 1;
-  
+
   // Extract topics from module data
   const topics = moduleData.topics || moduleData.content || [];
-  
+
   // Extract videos if available
   const videos = moduleData.youtubeVideos || [];
-  
+
   // Extract tags if available
   const tags = moduleData.tags || [];
-  
+
   // Duration
   const duration = moduleData.duration || "1-2 hours";
-  
+
+  const handleTopicClick = (topicIndex) => {
+    if (handleSubModuleClick) {
+      handleSubModuleClick(moduleIndex, topicIndex);
+      if (isMobile) {
+        onClose();
+      }
+    }
+  };
+
   return (
     <AnimatePresence mode="wait">
       {/* Overlay for mobile */}
@@ -119,180 +134,220 @@ const ModuleDetailSidebar = ({ moduleDetail, onClose }) => {
           onClick={onClose}
         />
       )}
-      
       <motion.div
         ref={sidebarRef}
         initial={{ x: 300, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: 300, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 350, damping: 30 }}
-        className={`module-detail-sidebar fixed lg:sticky top-0 right-0 h-screen z-40 bg-white border-l border-gray-200 shadow-lg flex flex-col rounded-l-xl lg:rounded-none optimized-animation ${
-          isMobile ? 'w-[95%] max-w-[360px]' : 'w-[320px]'
-        }`}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+          mass: 1,
+        }}
+        className="module-detail-sidebar fixed lg:sticky top-0 right-0 h-screen z-40 bg-white border-l border-gray-200 shadow-xl flex flex-col rounded-l-2xl lg:rounded-none w-[340px] overflow-hidden"
       >
+        {" "}
         {/* Header with close button */}
-        <div className="py-4 px-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50">
-          <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-            <BookOpenIcon size={18} className="text-blue-600" />
-            <span>Module {moduleNumber} Detail</span>
+        <div className="py-5 px-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-br from-white via-indigo-50 to-blue-50">
+          <h2 className="font-bold text-gray-800 flex items-center gap-3">
+            <div className="p-2 bg-white rounded-xl shadow-sm border border-indigo-100">
+              <BookOpenIcon size={18} className="text-indigo-600" />
+            </div>
+            <div>
+              <span className="text-lg">Module {moduleNumber}</span>
+              <div className="text-xs text-gray-500 font-normal">
+                Module Details
+              </div>
+            </div>
           </h2>
-          <button 
+          <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors hover:bg-gray-100 p-1 rounded-full"
+            className="text-gray-400 hover:text-gray-600 transition-all duration-200 hover:bg-white hover:bg-opacity-80 p-2 rounded-xl group"
             aria-label="Close module detail"
           >
-            <X size={18} />
+            <X
+              size={18}
+              className="group-hover:rotate-90 transition-transform duration-200"
+            />
           </button>
         </div>
-        
-        {/* Module title */}
-        <div className="p-5 border-b border-gray-100 bg-white">
-          <h3 className="text-lg font-medium text-gray-800 leading-tight">
-            {moduleData.chapterName?.replace(/Module \d+: /i, '')}
-          </h3>
-          <div className="mt-3 flex items-center gap-4">
-            <div className="flex items-center text-sm text-gray-500">
-              <Clock size={14} className="mr-1" />
-              <span>{duration}</span>
-            </div>
-            {videos.length > 0 && (
-              <div className="flex items-center text-sm text-gray-500">
-                <Video size={14} className="mr-1 text-red-500" />
-                <span>{videos.length} videos</span>
-              </div>
-            )}
-          </div>
-        </div>
-        
         {/* Content area */}
-        <div className="flex-grow overflow-y-auto px-5 py-4">
+        <div className="flex-grow overflow-y-auto px-6 py-5 custom-scrollbar bg-gradient-to-b from-white to-gray-50">
           {/* Topics section */}
-          <section className="mb-6">
-            <h4 className="text-sm uppercase tracking-wider text-gray-500 font-medium mb-3 flex items-center">
-              <FileText size={14} className="mr-2" />
-              Topics
-            </h4>
-            <div className="space-y-2.5">
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-bold text-gray-800 flex items-center">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                Topics
+              </h4>
+              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                {Array.isArray(topics) ? topics.length : 0}
+              </span>
+            </div>
+            <div className="space-y-3">
               {Array.isArray(topics) && topics.length > 0 ? (
                 topics.map((topic, index) => {
-                  const topicTitle = typeof topic === 'string' ? topic : topic.topic;
-                  
+                  const topicTitle =
+                    typeof topic === "string" ? topic : topic.topic;
+
                   return (
-                    <motion.div 
+                    <motion.div
                       key={index}
-                      className="p-3 rounded-md border-l-4 border-blue-400 bg-blue-50 hover:bg-blue-100 transition-all cursor-pointer flex items-center shadow-sm"
-                      whileHover={{ x: 5, boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
+                      className={`p-4 rounded-xl border-l-4 ${
+                        hoveredTopic === index
+                          ? "border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 shadow-md"
+                          : "border-blue-300 bg-white hover:bg-blue-50"
+                      } transition-all duration-300 cursor-pointer flex items-center shadow-sm hover:shadow-md group border border-gray-100 hover:border-blue-200`}
+                      whileHover={{ x: 3, scale: 1.01 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleTopicClick(index)}
                       tabIndex={0}
                       role="button"
+                      onMouseEnter={() => setHoveredTopic(index)}
+                      onMouseLeave={() => setHoveredTopic(null)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          // Here you can add functionality when a topic is activated via keyboard
+                        if (e.key === "Enter" || e.key === " ") {
+                          handleTopicClick(index);
                           e.preventDefault();
                         }
                       }}
                     >
-                      <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center mr-3 flex-shrink-0 text-blue-700 shadow-sm">
-                        <span className="text-xs font-semibold">{index + 1}</span>
+                      <div className="flex-1 mr-3">
+                        <span className="block text-sm font-semibold text-gray-800 leading-relaxed">
+                          {topicTitle}
+                        </span>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Topic {index + 1}
+                        </div>
                       </div>
-                      <p className="text-sm font-medium text-gray-700">{topicTitle}</p>
+                      <motion.div
+                        initial={{ opacity: 0.5, x: -3 }}
+                        animate={{
+                          opacity: hoveredTopic === index ? 1 : 0.5,
+                          x: hoveredTopic === index ? 0 : -3,
+                          scale: hoveredTopic === index ? 1.1 : 1,
+                        }}
+                        className="text-blue-600 p-1 rounded-full bg-blue-100 group-hover:bg-blue-200"
+                      >
+                        <ArrowRight size={14} />
+                      </motion.div>
                     </motion.div>
                   );
                 })
               ) : (
-                <p className="text-sm text-gray-500 italic">No topics available</p>
+                <div className="text-center p-8 text-gray-500 bg-white rounded-xl border border-gray-100">
+                  <FileText size={48} className="text-gray-300 mx-auto mb-3" />
+                  <p className="font-medium">No topics available</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    This module doesn't have topics yet
+                  </p>
+                </div>
               )}
             </div>
           </section>
-          
-          {/* Videos section */}
+          {/* Video resources section */}
           {videos.length > 0 && (
-            <section className="mb-6">
-              <h4 className="text-sm uppercase tracking-wider text-gray-500 font-medium mb-3 flex items-center">
-                <Video size={14} className="mr-2 text-red-500" />
-                Video Resources
-              </h4>
+            <section className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-bold text-gray-800 flex items-center">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                  Video Resources
+                </h4>
+                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                  {videos.length}
+                </span>
+              </div>
               <div className="space-y-3">
                 {videos.map((video, index) => (
-                  <a
+                  <motion.div
                     key={index}
-                    href={`https://www.youtube.com/watch?v=${video.videoId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group block p-3 rounded-md border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all cursor-pointer shadow-sm hover:shadow-md"
-                    aria-label={`Watch video: ${video.title}`}
+                    className="p-4 rounded-xl bg-white border border-gray-100 hover:border-red-200 hover:bg-red-50 transition-all duration-300 flex items-center cursor-pointer shadow-sm hover:shadow-md group"
+                    whileHover={{ y: -2, scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() =>
+                      handleTopicClick(
+                        moduleIndex,
+                        topics.findIndex(
+                          (t) =>
+                            (typeof t === "string" ? t : t.topic) ===
+                            video.title
+                        ) !== -1
+                          ? topics.findIndex(
+                              (t) =>
+                                (typeof t === "string" ? t : t.topic) ===
+                                video.title
+                            )
+                          : 0
+                      )
+                    }
                   >
-                    <div className="flex items-start">
-                      <div className="h-10 w-10 bg-red-100 rounded-md flex items-center justify-center text-red-500 flex-shrink-0 mr-3 group-hover:bg-red-200 transition-colors">
-                        <Play size={16} className="ml-1" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-red-700 transition-colors">{video.title}</p>
-                        <p className="text-xs text-gray-500 mt-1">YouTube Video</p>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center mr-4 flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform">
+                      <Play size={18} className="text-white ml-0.5" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="block text-sm font-semibold text-gray-800 line-clamp-2 leading-relaxed">
+                        {video.title}
+                      </span>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Video Content
                       </div>
                     </div>
-                  </a>
+                    <div className="text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ArrowRight size={16} />
+                    </div>
+                  </motion.div>
                 ))}
               </div>
             </section>
           )}
-          
           {/* Tags section */}
           {tags.length > 0 && (
-            <section className="mb-6">
-              <h4 className="text-sm uppercase tracking-wider text-gray-500 font-medium mb-3 flex items-center">
-                <Tag size={14} className="mr-2" />
-                Tags
-              </h4>
+            <section className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-bold text-gray-800 flex items-center">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                  Related Topics
+                </h4>
+                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                  {tags.length}
+                </span>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag, index) => (
-                  <span 
+                  <motion.span
                     key={index}
-                    className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-200 hover:bg-blue-100 transition-colors cursor-default"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-3 py-2 text-sm font-medium rounded-full bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border border-purple-200 hover:from-purple-200 hover:to-blue-200 transition-all cursor-pointer"
                   >
                     {tag}
-                  </span>
+                  </motion.span>
                 ))}
               </div>
             </section>
           )}
-          
-          {/* Resources section - if any */}
-          {moduleData.resources && moduleData.resources.length > 0 && (
-            <section className="mb-6">
-              <h4 className="text-sm uppercase tracking-wider text-gray-500 font-medium mb-3 flex items-center">
-                <Download size={14} className="mr-2" />
-                Resources
-              </h4>
-              <div className="space-y-2">
-                {moduleData.resources.map((resource, index) => (
-                  <a
-                    key={index}
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center p-2.5 rounded-md hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200"
-                    aria-label={`Open resource: ${resource.title || `Resource ${index + 1}`}`}
-                  >
-                    <LinkIcon size={14} className="mr-2 text-blue-600" />
-                    <span className="text-sm text-blue-600 truncate hover:underline">
-                      {resource.title || `Resource ${index + 1}`}
-                    </span>
-                  </a>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-        
-        {/* Footer action */}
-        <div className="p-4 border-t border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-          <button 
-            className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-indigo-700 transition-all hover:shadow-md"
-            aria-label="Start learning this module"
-          >
-            <Play size={16} className="fill-white" />
-            <span>Start Learning</span>
-          </button>
+
+          {/* Action buttons */}
+          <div className="space-y-3 pt-4 border-t border-gray-200">
+            <motion.button
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl flex items-center justify-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
+            >
+              <CheckCircle size={18} />
+              <span>Mark Module as Complete</span>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full py-3 px-6 bg-white hover:bg-gray-50 text-gray-700 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 border border-gray-200 hover:border-gray-300 font-medium"
+            >
+              <BookOpenIcon size={16} />
+              <span>View Full Content</span>
+            </motion.button>
+          </div>
         </div>
       </motion.div>
     </AnimatePresence>
