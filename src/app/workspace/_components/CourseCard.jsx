@@ -37,6 +37,7 @@ const CourseCard = ({ course }) => {
     
     checkEnrollmentStatus();
   }, [course.cid]);
+  
   const onEnroll = async (e) => {
     e.preventDefault();
     e.stopPropagation();

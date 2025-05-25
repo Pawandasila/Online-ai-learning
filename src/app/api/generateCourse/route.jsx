@@ -3,11 +3,27 @@ import { PROMPT } from "@/config/ai-prompt";
 import { db } from "@/config/db";
 import { coursesTable } from "@/config/schema";
 import axios from "axios";
+import { auth } from "@clerk/nextjs/server";
+import { getUserPlanFeatures, checkCourseLimit } from "@/lib/subscription";
+import { eq } from "drizzle-orm";
 
 export async function POST(req) {
   const formData = await req.json();
 
-  // Validate userId early
+  // Check authentication first
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return new Response(
+      JSON.stringify({
+        error: "Unauthorized",
+        details: "Please sign in to create courses",
+      }),
+      { status: 401 }
+    );
+  }
+
+  // Validate userId from form matches authenticated user
   if (!formData.userId) {
     return new Response(
       JSON.stringify({
@@ -15,6 +31,49 @@ export async function POST(req) {
         details: "A valid user ID must be provided to create a course",
       }),
       { status: 400 }
+    );
+  }
+
+  // Check subscription limits before proceeding
+  // Get current month's course count for this user
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  
+  const endOfMonth = new Date();
+  endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+  endOfMonth.setDate(0);
+  endOfMonth.setHours(23, 59, 59, 999);
+
+  const existingCourses = await db
+    .select()
+    .from(coursesTable)
+    .where(eq(coursesTable.userId, formData.userId));
+
+  // Filter courses created this month
+  const thisMonthCourses = existingCourses.filter(course => {
+    const createdAt = new Date(course.createdAt);
+    return createdAt >= startOfMonth && createdAt <= endOfMonth;
+  });
+
+  const currentCount = thisMonthCourses.length;
+  const limitCheck = await checkCourseLimit(currentCount);
+
+  if (!limitCheck.canCreate) {
+    const planFeatures = await getUserPlanFeatures();
+    
+    return new Response(
+      JSON.stringify({
+        error: "Course creation limit reached",
+        details: `You have reached your monthly limit of ${limitCheck.limit} courses. Upgrade your plan to create more courses.`,
+        limitInfo: {
+          current: currentCount,
+          limit: limitCheck.limit,
+          remaining: limitCheck.remaining,
+        },
+        upgradeRequired: true
+      }),
+      { status: 403 }
     );
   }
 

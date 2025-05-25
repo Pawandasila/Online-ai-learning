@@ -3,8 +3,14 @@
 import React from 'react'
 import CourseList from './_components/CourseList'
 import EnrolledCourseList from './_components/EnrolledCourseList'
+import { SubscriptionProvider } from '@/context/subscription.context'
+import { CourseEventsProvider, useCourseEvents } from '@/context/course-events.context'
+import { SubscriptionStatus } from '@/components/SubscriptionStatus'
+import { UsageTracker } from '@/components/UsageTracker'
 
-const WorkspacePage = () => {
+function WorkspaceContent() {
+  const { refreshTrigger, triggerRefresh } = useCourseEvents();
+
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
       {/* Global CSS for shimmer effect */}
@@ -29,17 +35,31 @@ const WorkspacePage = () => {
           left: 0;
           z-index: 1;
         }
-      `}</style>
-
-      <div className="max-w-7xl mx-auto">
+      `}</style>      <div className="max-w-7xl mx-auto px-4">
+        {/* Subscription Status and Usage */}
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          <SubscriptionStatus />
+          <UsageTracker refreshTrigger={refreshTrigger} />
+        </div>
+        
         <div>
           <EnrolledCourseList />
         </div>
         <div className="mt-4">
-          <CourseList />
+          <CourseList onCourseCreated={triggerRefresh} />
         </div>
       </div>
     </div>
+  );
+}
+
+const WorkspacePage = () => {
+  return (
+    <SubscriptionProvider>
+      <CourseEventsProvider>
+        <WorkspaceContent />
+      </CourseEventsProvider>
+    </SubscriptionProvider>
   )
 }
 

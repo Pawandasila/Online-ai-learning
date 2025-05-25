@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import CertificateViewer from "@/components/CertificateViewer";
+import { PremiumCertificateGate } from "@/components/SubscriptionGates";
 
 const EnrolledCourseCard = ({ course, progress, completedChapters }) => {
   console.log("EnrolledCourseCard course:", course);
@@ -182,13 +183,15 @@ const EnrolledCourseCard = ({ course, progress, completedChapters }) => {
             </button>
           </Link>          {/* Certificate Button - Show only if course is completed and has certificate */}
           {showCertificateButton && (
-            <button
-              onClick={() => setShowCertificate(true)}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-200 shadow-sm hover:shadow-md"
-            >
-              <Award size={18} className="mr-2" />
-              View Certificate
-            </button>
+            <PremiumCertificateGate>
+              <button
+                onClick={() => setShowCertificate(true)}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-200 shadow-sm hover:shadow-md"
+              >
+                <Award size={18} className="mr-2" />
+                View Certificate
+              </button>
+            </PremiumCertificateGate>
           )}
 
           {/* Test Completion Button - Only show for development/testing if not completed */}

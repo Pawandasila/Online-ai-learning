@@ -10,7 +10,7 @@ import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import CourseListLoading from "./CourseListLoading";
 
-const CourseList = () => {
+const CourseList = ({ onCourseCreated }) => {
   const [courseList, setCourseList] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -40,7 +40,7 @@ const CourseList = () => {
         if (response.data.length > 0) {
           toast.success(`Loaded ${response.data.length} courses`);
         }
-        console.log(response.data);
+        // console.log(response.data);
       } else {
         toast.dismiss(toastId);
         toast.error("Failed to load courses properly");
@@ -172,8 +172,7 @@ const CourseList = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8, duration: 0.5 }}
-          >
-            <AddNewCourse>
+          >            <AddNewCourse onCourseCreated={onCourseCreated}>
               <div className="flex items-center cursor-pointer justify-center">
                 <Plus className="mr-2" size={18} />
                 Create Your First Course

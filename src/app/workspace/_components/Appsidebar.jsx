@@ -28,6 +28,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import AddNewCourse from "./AddNewCourse";
+import { useCourseEvents } from "@/context/course-events.context";
 
 const item = [
   {
@@ -54,15 +55,16 @@ const Application = [
     url: "/workspace/ai-tools",
   },
   {
-    title: "Billing",
+    title: "Pricing & Billing",
     icon: CreditCard,
-    url: "/workspace/billing",
+    url: "/pricing",
   },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { open } = useSidebar();
+  const { triggerRefresh } = useCourseEvents();
 
   //   const {user}
 
@@ -179,10 +181,9 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              <div className="h-4"></div>
-              {open && (
+              <div className="h-4"></div>              {open && (
                 <SidebarMenuItem>
-                  <AddNewCourse>
+                  <AddNewCourse onCourseCreated={triggerRefresh}>
                     <Button
                       variant="outline"
                       className="hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 w-fit justify-start gap-2 text-sm transition-all duration-200 dark:hover:text-white"

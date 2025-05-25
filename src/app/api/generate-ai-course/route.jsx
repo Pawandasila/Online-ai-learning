@@ -5,6 +5,8 @@ import { GoogleGenAI } from "@google/genai";
 import axios from "axios";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { getUserPlanFeatures, checkCourseLimit } from "@/lib/subscription";
 
 // Helper function to wait for a specified time
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -13,12 +15,26 @@ const YOUTUBE_BASE_URL = "https://www.googleapis.com/youtube/v3/search";
 
 const getYouTubeVideo = async (topic) => {
   try {
+    // Enhanced search query with educational keywords
+    const educationalQuery = `${topic} tutorial learn programming course`;
+    
     const params = {
-      part: "snippet",
-      q: topic,
-      maxResults: 4,
+      part: "snippet,statistics",
+      q: educationalQuery,
+      maxResults: 8, // Get more results to filter from
       type: "video",
       key: process.env.YOUTUBE_API_KEY,
+      // Additional parameters for better content quality
+      order: "relevance", // Sort by relevance
+      videoDefinition: "high", // HD videos only
+      videoDuration: "medium", // 4-20 minutes (good for learning)
+      videoEmbeddable: "true", // Only embeddable videos
+      videoSyndicated: "true", // Only syndicated videos
+      safeSearch: "moderate", // Filter inappropriate content
+      relevanceLanguage: "en", // English content
+      regionCode: "US", // US region for better educational content
+      // Fields to optimize response
+      fields: "items(id/videoId,snippet(title,description,channelTitle,publishedAt,thumbnails/medium),statistics(viewCount,likeCount))"
     };
 
     const res = await axios.get(YOUTUBE_BASE_URL, { params });
@@ -26,29 +42,139 @@ const getYouTubeVideo = async (topic) => {
 
     // Check if items exists and is an array before using forEach
     if (res.data && Array.isArray(res.data.items)) {
-      res.data.items.forEach((item) => {
-        if (item && item.id && item.snippet) {
-          const data = {
-            videoId: item.id.videoId,
-            title: item.snippet.title,
-          };
-          YouTubeVideoList.push(data);
-        }
+      // Filter and sort videos for educational quality
+      const filteredVideos = res.data.items
+        .filter((item) => {
+          if (!item || !item.id || !item.snippet) return false;
+          
+          const title = item.snippet.title.toLowerCase();
+          const description = item.snippet.description?.toLowerCase() || "";
+          const channelTitle = item.snippet.channelTitle?.toLowerCase() || "";
+          
+          // Filter for educational content keywords
+          const educationalKeywords = [
+            'tutorial', 'learn', 'course', 'guide', 'how to', 'programming',
+            'coding', 'development', 'lesson', 'training', 'beginner',
+            'intermediate', 'advanced', 'step by step', 'complete'
+          ];
+          
+          // Check if title or description contains educational keywords
+          const hasEducationalContent = educationalKeywords.some(keyword => 
+            title.includes(keyword) || description.includes(keyword)
+          );
+          
+          // Filter out low-quality indicators
+          const lowQualityIndicators = [
+            'shorts', 'tiktok', 'meme', 'funny', 'reaction', 'clickbait',
+            'live stream', 'podcast', 'music', 'song', 'gaming'
+          ];
+          
+          const hasLowQualityIndicators = lowQualityIndicators.some(indicator => 
+            title.includes(indicator) || description.includes(indicator)
+          );
+          
+          // Prefer educational channels
+          const educationalChannels = [
+            'freecodecamp', 'codecademy', 'udemy', 'coursera', 'edx',
+            'khan academy', 'mit', 'stanford', 'harvard', 'programming',
+            'code', 'tech', 'dev', 'tutorial'
+          ];
+          
+          const isEducationalChannel = educationalChannels.some(channel => 
+            channelTitle.includes(channel)
+          );
+          
+          return hasEducationalContent && !hasLowQualityIndicators;
+        })
+        .sort((a, b) => {
+          // Sort by view count (higher views = potentially better content)
+          const viewsA = parseInt(a.statistics?.viewCount) || 0;
+          const viewsB = parseInt(b.statistics?.viewCount) || 0;
+          return viewsB - viewsA;
+        })
+        .slice(0, 4); // Take top 4 after filtering and sorting
+
+      filteredVideos.forEach((item) => {
+        const data = {
+          videoId: item.id.videoId,
+          title: item.snippet.title,
+          description: item.snippet.description?.substring(0, 200) + "..." || "",
+          channelTitle: item.snippet.channelTitle,
+          publishedAt: item.snippet.publishedAt,
+          thumbnail: item.snippet.thumbnails?.medium?.url || "",
+          viewCount: item.statistics?.viewCount || "0",
+          duration: "Medium length" // YouTube API v3 doesn't return duration in search
+        };
+        YouTubeVideoList.push(data);
       });
-    } else {
-      
     }
 
-    // 
+    console.log(`Found ${YouTubeVideoList.length} quality educational videos for topic: ${topic}`);
     return YouTubeVideoList;
   } catch (error) {
     console.error("YouTube fetch error:", error.message);
+    console.error("Error details:", error.response?.data || error);
     return [];
   }
 };
 
 export async function POST(req) {
   try {
+    // Check authentication first
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized - Please sign in to generate courses" },
+        { status: 401 }
+      );
+    }
+
+    // Check subscription limits before proceeding
+    // Get current month's course count for this user
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+    const endOfMonth = new Date();
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+    endOfMonth.setDate(0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const existingCourses = await db
+      .select()
+      .from(coursesTable)
+      .where(eq(coursesTable.userId, userId));
+
+    // Filter courses created this month
+    const thisMonthCourses = existingCourses.filter(course => {
+      const createdAt = new Date(course.createdAt);
+      return createdAt >= startOfMonth && createdAt <= endOfMonth;
+    });
+
+    const currentCount = thisMonthCourses.length;
+    const limitCheck = await checkCourseLimit(currentCount);
+
+    if (!limitCheck.canCreate) {
+      const planFeatures = await getUserPlanFeatures();
+      const planName = planFeatures ? Object.keys(planFeatures)[0] : 'Free';
+      
+      return NextResponse.json(
+        { 
+          error: "Course generation limit reached",
+          details: `You have reached your monthly limit of ${limitCheck.limit} courses. Upgrade your plan to create more courses.`,
+          limitInfo: {
+            current: currentCount,
+            limit: limitCheck.limit,
+            remaining: limitCheck.remaining,
+            planName: planName
+          },
+          upgradeRequired: true
+        },
+        { status: 403 }
+      );
+    }
+
     const data = await req.json();
 
     const courseObj = data?.course;
@@ -201,14 +327,21 @@ export async function POST(req) {
               "Content could not be properly formatted. Please try again.",
             youtubeVideos: [],
           };
-        }
-
-        // Attach YouTube videos
+        }        // Attach YouTube videos with enhanced search
         try {
           const moduleName = module?.moduleName || "programming";
-          // 
+          console.log(`Fetching educational videos for module: ${moduleName}`);
           const videos = await getYouTubeVideo(moduleName);
-          parsedJson.youtubeVideos = videos || [];
+          
+          // Add additional metadata to videos
+          parsedJson.youtubeVideos = videos.map(video => ({
+            ...video,
+            source: "youtube",
+            quality: "educational",
+            addedAt: new Date().toISOString()
+          })) || [];
+          
+          console.log(`Successfully attached ${parsedJson.youtubeVideos.length} videos to module: ${moduleName}`);
         } catch (youtubeError) {
           console.error(
             "Error attaching YouTube videos:",
