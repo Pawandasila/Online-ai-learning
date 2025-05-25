@@ -118,7 +118,8 @@ const ModuleDetailSidebar = ({
       if (isMobile) {
         onClose();
       }
-    }  };
+    }
+  };
 
   return (
     <>
@@ -183,7 +184,8 @@ const ModuleDetailSidebar = ({
               </span>
             </div>
             <div className="space-y-3">
-              {Array.isArray(topics) && topics.length > 0 ? (                topics.map((topic, index) => {
+              {Array.isArray(topics) && topics.length > 0 ? (
+                topics.map((topic, index) => {
                   const topicTitle =
                     typeof topic === "string" ? topic : topic.topic;
 
@@ -254,9 +256,13 @@ const ModuleDetailSidebar = ({
                   {videos.length}
                 </span>
               </div>
-              <div className="space-y-3">                {videos.map((video, index) => (
+              <div className="space-y-3">
+                {" "}
+                {videos.map((video, index) => (
                   <motion.div
-                    key={`video-${moduleIndex}-${index}-${video.title || index}`}
+                    key={`video-${moduleIndex}-${index}-${
+                      video.title || index
+                    }`}
                     className="p-4 rounded-xl bg-white border border-gray-100 hover:border-red-200 hover:bg-red-50 transition-all duration-300 flex items-center cursor-pointer shadow-sm hover:shadow-md group"
                     whileHover={{ y: -2, scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
@@ -309,7 +315,9 @@ const ModuleDetailSidebar = ({
                   {tags.length}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">                {tags.map((tag, index) => (
+              <div className="flex flex-wrap gap-2">
+                {" "}
+                {tags.map((tag, index) => (
                   <motion.span
                     key={`tag-${moduleIndex}-${index}-${tag}`}
                     whileHover={{ scale: 1.05 }}
@@ -322,9 +330,8 @@ const ModuleDetailSidebar = ({
               </div>
             </section>
           )}
-
-          {/* Action buttons */}
-          <div className="space-y-3 pt-4 border-t border-gray-200">
+          
+          {/* <div className="space-y-3 pt-4 border-t border-gray-200">
             <motion.button
               whileHover={{ scale: 1.02, y: -1 }}
               whileTap={{ scale: 0.98 }}
@@ -342,7 +349,8 @@ const ModuleDetailSidebar = ({
               <BookOpenIcon size={16} />
               <span>View Full Content</span>
             </motion.button>
-          </div>        </div>
+          </div> */}
+        </div>
       </motion.div>
     </>
   );

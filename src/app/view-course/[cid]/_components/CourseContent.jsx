@@ -148,15 +148,33 @@ const CourseContent = ({
       // updateCourseProgress(newProgress);
     }
   }, [activeModuleIndex, activeTopicIndex, courseData, progress]);
-
-  // Helper function to check if a chapter is completed
-  const isChapterCompleted = (chapterIndex) => {
+    const isChapterCompleted = (chapterIndex) => {
     const completedChapters =
       courseData?.enrollCourses?.completedChapters || [];
     return (
       Array.isArray(completedChapters) &&
       completedChapters.includes(chapterIndex)
     );
+  };
+  
+  // Helper function to check if the completion button should be shown
+  const shouldShowCompletionButton = () => {
+    // Only show the button if:
+    // 1. We have valid module and topic data
+    // 2. We're viewing the actual content (not just the sidebar)
+    // 3. We have a valid module index
+    // 4. We're on the LAST topic of the current chapter
+    // 5. The chapter hasn't been completed yet
+    
+    if (!currentModule || !currentTopic || activeModuleIndex === undefined || activeTopicIndex === undefined) {
+      return false;
+    }
+    
+    const topics = currentModule.topics || currentModule.content || [];
+    const isLastTopic = activeTopicIndex === topics.length - 1;
+    const isNotCompleted = !isChapterCompleted(activeModuleIndex);
+    
+    return isLastTopic && isNotCompleted;
   };
 
   // Handle chapter completion
@@ -525,17 +543,10 @@ const CourseContent = ({
         >
           <ChevronLeft className="h-4 w-4" />
           Previous
-        </button>
-
-        {/* Chapter Completion Button */}
+        </button>{" "}
+        
         <div className="flex items-center gap-3">
-          {isChapterCompleted(activeModuleIndex) ? (
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200">
-              <CheckCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">Chapter Completed</span>
-            </div>
-          ) : (
-            <button
+          {shouldShowCompletionButton() ? (            <button
               onClick={handleCompleteChapter}
               disabled={completingChapter}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -545,11 +556,14 @@ const CourseContent = ({
               }`}
             >
               <CheckCircle className="h-4 w-4" />
-              {completingChapter ? "Completing..." : "Complete Chapter"}
+              {completingChapter ? "Marking as Read..." : "Mark as Read"}
             </button>
-          )}
+          ) : isChapterCompleted(activeModuleIndex) ? (            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">Chapter Read</span>
+            </div>
+          ) : null}
         </div>
-
         <button
           onClick={nextTopic}
           disabled={

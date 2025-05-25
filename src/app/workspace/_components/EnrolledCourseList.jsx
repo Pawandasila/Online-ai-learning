@@ -1,61 +1,64 @@
-'use client'
-import axios from 'axios'
-import React, { useEffect, useState } from 'react'
-import { motion } from "framer-motion"
-import EnrolledCourseCard from './EnrolledCourseCard'
-import EnrolledCourseListLoading from './EnrolledCourseListLoading'
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { motion } from "framer-motion";
+import EnrolledCourseCard from './EnrolledCourseCard';
+import EnrolledCourseListLoading from './EnrolledCourseListLoading';
 
 const EnrolledCourseList = () => {
-    const [enrolledCourses, setEnrolledCourses] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
+    const [enrolledCourses, setEnrolledCourses] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        getEnrolledCourses()
-    }, [])
+        getEnrolledCourses();
+    }, []);
 
     const getEnrolledCourses = async () => {
         try {
-            setLoading(true)
-            const result = await axios.get('/api/enroll-course')
-            console.log("Enrolled courses data:", result.data.data)
-            if (result.data?.success && result.data) {
-                setEnrolledCourses(result.data.data)
+            setLoading(true);
+            setError(null);
+            const result = await axios.get('/api/enroll-course');
+            console.log("Enrolled courses data:", result.data);
+            
+            if (result.data?.success && result.data?.data) {
+                // Filter out any invalid course data
+                const validCourses = result.data.data.filter(courseData => 
+                    courseData && (courseData.courseName || courseData.courseJson?.course?.name)
+                );
+                setEnrolledCourses(validCourses);
             } else {
-                setError('No courses found')
+                setEnrolledCourses([]);
             }
         } catch (error) {
-            console.error('Error fetching enrolled courses:', error)
-            setError('Failed to load courses')
+            console.error('Error fetching enrolled courses:', error);
+            setError('Failed to load courses');
+            setEnrolledCourses([]);
         } finally {
-            // Add a slight delay to ensure smooth transition
             setTimeout(() => {
-                setLoading(false)
-            }, 800)
+                setLoading(false);
+            }, 800);
         }
-    }
+    };
 
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
-            transition: {
-                staggerChildren: 0.1,
-            },
-        },
-    }
+            transition: { staggerChildren: 0.1 }
+        }
+    };
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <motion.h1
-                className="text-2xl font-bold mb-6"
-                initial={{ opacity: 0, y: -10 }}
+        <div className="px-4 py-6">
+            <motion.h2 
+                className="text-2xl font-bold mb-6 text-gray-800"
+                initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
             >
-                My Enrolled Courses
-            </motion.h1>
-            
+                My Learning Journey
+            </motion.h2>
+
             {loading ? (
                 <motion.div
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -86,9 +89,9 @@ const EnrolledCourseList = () => {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <p className="text-red-500">{error}</p>
+                    <p className="text-red-500 mb-4">{error}</p>
                     <button 
-                        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                         onClick={getEnrolledCourses}
                     >
                         Try Again
@@ -110,29 +113,32 @@ const EnrolledCourseList = () => {
                     initial="hidden"
                     animate="visible"
                 >
-                    {enrolledCourses.map((courseData, index) => (
-                        <motion.div
-                            key={index}
-                            variants={{
-                                hidden: { opacity: 0, y: 20 },
-                                visible: {
-                                    opacity: 1,
-                                    y: 0,
-                                    transition: { duration: 0.3, delay: index * 0.05 }
-                                }
-                            }}
-                        >
-                            <EnrolledCourseCard 
-                                course={courseData.courses}
-                                progress={courseData.enrollCourses.progress}
-                                completedChapters={courseData.enrollCourses.completedChapters}
-                            />
-                        </motion.div>
-                    ))}
+                    {enrolledCourses.map((courseData, index) => {
+                        // Pass the courseData directly since the API response structure is flat
+                        return (
+                            <motion.div
+                                key={courseData.courseId || index}
+                                variants={{
+                                    hidden: { opacity: 0, y: 20 },
+                                    visible: {
+                                        opacity: 1,
+                                        y: 0,
+                                        transition: { duration: 0.3, delay: index * 0.05 }
+                                    }
+                                }}
+                            >
+                                <EnrolledCourseCard 
+                                    course={courseData}
+                                    progress={courseData.progress || 0}
+                                    completedChapters={courseData.completedChapters || []}
+                                />
+                            </motion.div>
+                        );
+                    })}
                 </motion.div>
             )}
         </div>
-    )
-}
+    );
+};
 
-export default EnrolledCourseList
+export default EnrolledCourseList;

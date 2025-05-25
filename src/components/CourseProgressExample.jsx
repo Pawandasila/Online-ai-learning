@@ -8,6 +8,7 @@ import {
   downloadCertificate 
 } from '@/lib/course-progress';
 import { CheckCircle, Download, Award } from 'lucide-react';
+import { toast } from 'sonner';
 
 const CourseProgressExample = ({ courseId }) => {
   const [enrollmentData, setEnrollmentData] = useState(null);

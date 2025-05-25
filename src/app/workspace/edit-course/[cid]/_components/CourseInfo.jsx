@@ -22,12 +22,21 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-const CourseInfo = ({ course, loading, error, viewCourse }) => {
-  const [expandedModule, setExpandedModule] = useState(null);
+const CourseInfo = ({ course, loading, error, viewCourse }) => {  const [expandedModule, setExpandedModule] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
   const moduleRefs = useRef([]);
   const [loadingInfo, setLoadingInfo] = useState(false);
   const router = useRouter();
+
+  // Fix: Access the correct data structure for course and modules
+  const courseData = course?.courseJson?.course || {};
+
+  // Fix: Access modules from the correct path in the data structure
+  const courseModules = courseData?.modules || [];
+
+  console.log("CourseInfo received course:", course);
+  console.log("CourseInfo courseData:", courseData);
+  console.log("CourseInfo courseModules:", courseModules);
 
   useEffect(() => {
     if (expandedModule !== null && moduleRefs.current[expandedModule]) {
@@ -37,16 +46,9 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
       });
     }
   }, [expandedModule]);
-
   if (loading) return <LoadingComponent />;
   if (error)
     return <div className="p-6 bg-red-50 text-red-600 rounded-lg">{error}</div>;
-
-  // Fix: Access the correct data structure for course and modules
-  const courseData = course?.courseJson?.course || {};
-
-  // Fix: Access modules from the correct path in the data structure
-  const courseModules = courseData?.modules || [];
 
   const toggleModule = (index) => {
     if (expandedModule === index) {
@@ -55,9 +57,7 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
       setExpandedModule(index);
       setActiveStep(index);
     }
-  };
-
-  const generateCourseContent = async () => {
+  };  const generateCourseContent = async () => {
     // Create a loading toast and get its ID
     const toastId = toast.loading("Generating AI course content...", {
       description: "This may take a few minutes. Please wait.",
@@ -66,8 +66,60 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
     try {
       setLoadingInfo(true);
 
+      console.log("Original course data:", course);
+
+      // Fix: Ensure we have the correct course data structure for the API
+      // The API expects: data.course.courseJson.course.modules (array)
+      
+      // Get the number of modules from the course data
+      const numberOfModules = course?.noOfModules || courseData?.noOfModules || 5;
+      
+      // Create basic modules structure if it doesn't exist
+      const basicModules = Array.from({ length: numberOfModules }, (_, index) => ({
+        moduleName: `Module ${index + 1}`,
+        chapterName: `Module ${index + 1}: Introduction to ${course?.name || course?.courseName || 'Subject'}`,
+        duration: "2 hours",
+        about: `This module covers fundamental concepts related to ${course?.name || course?.courseName || 'the subject'}.`,
+        topics: [`Introduction to ${course?.name || course?.courseName || 'Subject'}`, "Basic concepts", "Practical examples"]
+      }));
+
+      // Use existing modules if available, otherwise use basic structure
+      const existingModules = course?.courseJson?.course?.modules || courseData?.modules;
+      const modulesToUse = (existingModules && Array.isArray(existingModules) && existingModules.length > 0) 
+        ? existingModules 
+        : basicModules;
+
+      const courseDataToSend = {
+        courseId: course?.cid || course?.courseId,
+        name: course?.name || course?.courseName,
+        cid: course?.cid || course?.courseId,
+        courseJson: {
+          course: {
+            name: course?.name || course?.courseName,
+            description: course?.description || course?.courseDescription,
+            noOfModules: numberOfModules,
+            difficultyLevel: course?.difficultyLevel || "beginner",
+            categories: Array.isArray(course?.categories) 
+              ? course.categories 
+              : (typeof course?.categories === 'string' 
+                ? course.categories.split(',').map(cat => cat.trim()) 
+                : ["General"]),
+            includeVideo: course?.includeVideo !== undefined ? course.includeVideo : true,
+            modules: modulesToUse
+          }
+        },
+        bannerImageUrl: course?.bannerImageUrl,
+        createdAt: course?.createdAt,
+        updatedAt: course?.updatedAt
+      };
+
+      console.log("Sending course data to API:", courseDataToSend);
+      console.log("Modules being sent:", modulesToUse);
+
       // Start the API request to generate course content
-      const result = await axios.post("/api/generate-ai-course", { course });
+      const result = await axios.post("/api/generate-ai-course", { 
+        course: courseDataToSend 
+      });
 
       // Dismiss the loading toast and show success
       toast.dismiss(toastId);
@@ -84,6 +136,9 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
       const responseData = err.response?.data;
       const isOverloaded = responseData?.isOverloaded;
 
+      console.error("Generation error:", err);
+      console.error("Error response:", responseData);
+
       if (isOverloaded) {
         toast.error("AI Service Temporarily Unavailable", {
           description:
@@ -98,18 +153,20 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
       } else {
         toast.error("Failed to generate course", {
           description:
-            responseData?.details || err.message || "An unknown error occurred",
+            responseData?.details || 
+            responseData?.error || 
+            err.message || 
+            "An unknown error occurred",
         });
       }
-
-      console.error("Generation error:", err);
     } finally {
       setLoadingInfo(false);
     }
   };
 
   const continueLearning = () => {
-    router.push(`/view-course/${course.cid}`);
+    const courseId = course?.courseId || course?.cid;
+    router.push(`/view-course/${courseId}`);
   };
 
   const containerVariants = {
@@ -154,7 +211,7 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
       <div className="relative h-64 md:h-80 overflow-hidden rounded-xl shadow-lg mb-8">
         <motion.img
           src={course?.bannerImageUrl || "/default-course-banner.jpg"}
-          alt={courseData?.name}
+          alt={courseData?.name || course?.courseName}
           className="w-full h-full object-cover"
           initial={{ scale: 1.1 }}
           animate={{ scale: 1 }}
@@ -168,20 +225,23 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
             >
               {Array.isArray(courseData?.categories)
                 ? courseData?.categories[0]
-                : courseData?.categories}
+                : courseData?.categories || 
+                  (typeof course?.categories === 'string' 
+                    ? course.categories.split(',')[0].trim()
+                    : course?.categories)}
             </motion.div>
             <motion.h1
               className="text-3xl md:text-5xl font-bold mb-2 leading-tight"
               variants={itemVariants}
             >
-              {courseData?.name}
+              {courseData?.name || course?.courseName || "Course Title"}
             </motion.h1>
             <motion.p
               className="text-white/80 md:w-3/4 mt-3 text-base md:text-lg"
               variants={itemVariants}
             >
-              {courseData?.description
-                ? courseData.description.split(".")[0] + "."
+              {(courseData?.description || course?.courseDescription)
+                ? (courseData?.description || course?.courseDescription).split(".")[0] + "."
                 : "No description available."}
             </motion.p>
           </div>
@@ -199,7 +259,7 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
               Course Overview
             </h2>
             <p className="text-gray-700 leading-relaxed mb-6">
-              {courseData?.description || "No description available."}
+              {courseData?.description || course?.courseDescription || "No description available."}
             </p>
 
             {/* Course Stats (redesigned) */}
@@ -225,7 +285,7 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
                   <Layers className="h-6 w-6 text-green-600" />
                 </div>
                 <p className="font-bold text-xl text-gray-800">
-                  {courseData?.noOfModules}
+                  {courseData?.noOfModules || course?.noOfModules || 0}
                 </p>
                 <p className="text-xs text-gray-500 uppercase mt-1">Modules</p>
               </motion.div>
@@ -239,7 +299,7 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
                   <Award className="h-6 w-6 text-purple-600" />
                 </div>
                 <p className="font-bold text-xl text-gray-800 capitalize">
-                  {courseData?.difficultyLevel}
+                  {courseData?.difficultyLevel || course?.difficultyLevel || "Beginner"}
                 </p>
                 <p className="text-xs text-gray-500 uppercase mt-1">
                   Difficulty
@@ -255,7 +315,7 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
                   <Video className="h-6 w-6 text-amber-600" />
                 </div>
                 <p className="font-bold text-xl text-gray-800">
-                  {course?.includeVideo ? "Yes" : "No"}
+                  {course?.includeVideo !== undefined ? (course.includeVideo ? "Yes" : "No") : "Yes"}
                 </p>
                 <p className="text-xs text-gray-500 uppercase mt-1">Videos</p>
               </motion.div>
@@ -263,7 +323,7 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
           </div>
 
           {/* Categories - Redesigned */}
-          {courseData?.categories && (
+          {(courseData?.categories || course?.categories) && (
             <motion.div
               className="bg-white rounded-xl shadow-md p-6 md:p-8"
               variants={itemVariants}
@@ -288,13 +348,28 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
                       {category}
                     </motion.span>
                   ))
+                ) : typeof course?.categories === 'string' ? (
+                  course.categories.split(',').map((category, index) => (
+                    <motion.span
+                      key={index}
+                      className="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-sm font-medium"
+                      whileHover={{ scale: 1.05, backgroundColor: "#dbeafe" }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 10,
+                      }}
+                    >
+                      {category.trim()}
+                    </motion.span>
+                  ))
                 ) : (
                   <motion.span
                     className="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-sm font-medium"
                     whileHover={{ scale: 1.05, backgroundColor: "#dbeafe" }}
                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   >
-                    {courseData?.categories}
+                    {courseData?.categories || course?.categories}
                   </motion.span>
                 )}
               </div>
@@ -311,15 +386,16 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
               Course Curriculum
             </h2>
 
-            {/* Module Timeline - Based on Wireframe */}
-            <div className="relative">
-              {/* Vertical Line */}
-              <div className="absolute left-4 top-6 bottom-0 w-0.5 bg-gray-200 z-0"></div>
+            {/* Check if course content exists */}
+            {courseModules && Array.isArray(courseModules) && courseModules.length > 0 ? (
+              /* Module Timeline - Based on Wireframe */
+              <div className="relative">
+                {/* Vertical Line */}
+                <div className="absolute left-4 top-6 bottom-0 w-0.5 bg-gray-200 z-0"></div>
 
-              {/* Modules in Timeline Format */}
-              <div className="space-y-8">
-                {courseModules && Array.isArray(courseModules) ? (
-                  courseModules.map((module, index) => (
+                {/* Modules in Timeline Format */}
+                <div className="space-y-8">
+                  {courseModules.map((module, index) => (
                     <div
                       key={index}
                       ref={(el) => (moduleRefs.current[index] = el)}
@@ -354,7 +430,7 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
                           </div>
                           <div className="flex items-center space-x-3">
                             <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                              {module.duration}
+                              {module.duration || "TBD"}
                             </span>
                             <motion.div
                               animate={{
@@ -434,28 +510,49 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
                         </motion.div>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-gray-500 italic p-3">
-                    No modules available for this course.
-                  </div>
-                )}
+                  ))}
 
-                {/* Final marker */}
-                <div className="relative h-6">
-                  <div className="absolute left-4 top-0 transform -translate-x-1/2">
-                    <motion.div
-                      className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center z-10"
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      whileHover={{ scale: 1.2 }}
-                    >
-                      <CheckCircle className="h-4 w-4 text-white" />
-                    </motion.div>
+                  {/* Final marker */}
+                  <div className="relative h-6">
+                    <div className="absolute left-4 top-0 transform -translate-x-1/2">
+                      <motion.div
+                        className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center z-10"
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        whileHover={{ scale: 1.2 }}
+                      >
+                        <CheckCircle className="h-4 w-4 text-white" />
+                      </motion.div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Show message when no content is generated yet */
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-700 mb-2">
+                  Course Content Not Generated Yet
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  Click "Generate AI Course Content" to create the detailed curriculum and modules.
+                </p>
+                <motion.button
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2 mx-auto"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={generateCourseContent}
+                  disabled={loadingInfo}
+                >
+                  {loadingInfo ? (
+                    <Loader2Icon className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Play className="h-5 w-5" />
+                  )}
+                  {loadingInfo ? "Generating..." : "Generate Course Content"}
+                </motion.button>
+              </div>
+            )}
           </motion.div>
         </motion.div>
 
@@ -470,7 +567,7 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
                 </h3>
                 <div className="space-y-4">
                   <p className="text-gray-600">
-                    Master {courseData?.name} with this comprehensive course.
+                    Master {courseData?.name || course?.courseName || "this course"} with this comprehensive course.
                   </p>
 
                   <div className="flex items-center justify-between py-3 border-t border-gray-100">
@@ -481,14 +578,14 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
                   <div className="flex items-center justify-between py-3 border-t border-gray-100">
                     <span className="text-gray-600">Difficulty Level</span>
                     <span className="font-medium capitalize">
-                      {courseData?.difficultyLevel}
+                      {courseData?.difficultyLevel || course?.difficultyLevel || "Beginner"}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between py-3 border-t border-b border-gray-100">
                     <span className="text-gray-600">Modules</span>
                     <span className="font-medium">
-                      {courseData?.noOfModules}
+                      {courseData?.noOfModules || course?.noOfModules || 0}
                     </span>
                   </div>
                 </div>
@@ -519,29 +616,30 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {
             </div>
 
             {/* What You'll Learn Card */}
-            <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
-              <h3 className="text-xl font-bold mb-4 text-gray-800">
-                What You'll Learn
-              </h3>
-              <ul className="space-y-3">
-                {courseModules?.slice(0, 4).flatMap((module, idx) =>
-                  module?.topics?.slice(0, 1).map((topic, topicIdx) => (
-                    <motion.li
-                      key={`${idx}-${topicIdx}`}
-                      className="flex items-start"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: (idx + topicIdx) * 0.1 }}
-                    >
-                      <div className="mr-3 mt-1">
-                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                      </div>
-                      <span className="text-gray-700">{topic}</span>
-                    </motion.li>
-                  ))
-                )}
-              </ul>
-            </div>
+            {courseModules && courseModules.length > 0 && (
+              <div className="bg-white rounded-xl shadow-md p-6 md:p-8">                <h3 className="text-xl font-bold mb-4 text-gray-800">
+                  What You'll Learn
+                </h3>
+                <ul className="space-y-3">
+                  {courseModules?.slice(0, 4).flatMap((module, idx) =>
+                    module?.topics?.slice(0, 1).map((topic, topicIdx) => (
+                      <motion.li
+                        key={`${idx}-${topicIdx}`}
+                        className="flex items-start"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: (idx + topicIdx) * 0.1 }}
+                      >
+                        <div className="mr-3 mt-1">
+                          <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                        </div>
+                        <span className="text-gray-700">{topic}</span>
+                      </motion.li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            )}
 
             {/* Course Recommendations */}
             <div className="bg-white rounded-xl shadow-md p-6 md:p-8">

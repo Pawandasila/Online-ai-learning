@@ -36,10 +36,10 @@ const getYouTubeVideo = async (topic) => {
         }
       });
     } else {
-      console.log("No valid YouTube items found in response");
+      
     }
 
-    // console.log("YouTubeVideoList", YouTubeVideoList);
+    // 
     return YouTubeVideoList;
   } catch (error) {
     console.error("YouTube fetch error:", error.message);
@@ -52,11 +52,21 @@ export async function POST(req) {
     const data = await req.json();
 
     const courseObj = data?.course;
+    
+    
     const course = courseObj?.courseJson?.course;
+    
+    
     const courseTitle = courseObj?.name;
     const cid = courseObj?.cid;
 
+    
+    
+    
+
     if (!course || !Array.isArray(course.modules)) {
+      console.error("Invalid course data format - missing modules array");
+      console.error("Course structure:", course);
       return NextResponse.json(
         { error: "Invalid course data format" },
         { status: 400 }
@@ -79,7 +89,7 @@ export async function POST(req) {
 
     const enrichedModules = await Promise.all(
       course.modules.map(async (module) => {
-        // console.log(module.moduleName)
+        // 
         const promptContent = CHAPTER_PROMPT + JSON.stringify(module);
         const contents = [
           {
@@ -116,7 +126,7 @@ export async function POST(req) {
             retries++;
             
             // Log the retry attempt
-            console.log(`Retry attempt ${retries}/${maxRetries} for module: ${module.moduleName}`);
+            
             
             if (retries >= maxRetries) {
               console.error("Max retries reached for Gemini API call");
@@ -125,7 +135,7 @@ export async function POST(req) {
 
             // Calculate exponential backoff delay: 2^retries * 1000ms + random jitter
             const delay = Math.min(2 ** retries * 1000 + Math.random() * 1000, 10000);
-            console.log(`Waiting ${delay}ms before next retry...`);
+            
             await sleep(delay);
           }
         }
@@ -152,9 +162,7 @@ export async function POST(req) {
             try {
               parsedJson = JSON.parse(jsonString);
             } catch (innerErr) {
-              console.log(
-                "Failed to parse JSON from code block, trying alternative extraction"
-              );
+              console.error("JSON parsing error from code block:", innerErr.message);
             }
           }
 
@@ -168,7 +176,7 @@ export async function POST(req) {
               try {
                 parsedJson = JSON.parse(jsonString);
               } catch (innerErr) {
-                console.log("Failed to parse JSON by braces");
+                
               }
             }
           }
@@ -182,7 +190,7 @@ export async function POST(req) {
                 "Content could not be properly formatted. Please try again.",
               youtubeVideos: [],
             };
-            console.log("Using fallback JSON structure due to parsing issues");
+            
           }
         } catch (err) {
           console.error("JSON extraction error:", err.message);
@@ -198,7 +206,7 @@ export async function POST(req) {
         // Attach YouTube videos
         try {
           const moduleName = module?.moduleName || "programming";
-          // console.log("Fetching YouTube videos for:", moduleName);
+          // 
           const videos = await getYouTubeVideo(moduleName);
           parsedJson.youtubeVideos = videos || [];
         } catch (youtubeError) {
@@ -213,8 +221,8 @@ export async function POST(req) {
       })
     );
 
-    // console.log("courseTitle" , courseTitle);
-    // console.log("enrichedModules" , enrichedModules);
+    // 
+    // 
 
     // Update the courseContent field instead of trying to use a non-existent enrichedModules field
     const dbRes = await db

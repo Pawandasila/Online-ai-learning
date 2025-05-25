@@ -12,20 +12,24 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import ChapterSidebar from "./_components/ChapterListSidebar";
 import CourseContent from "./_components/CourseContent";
 import ModuleDetailSidebar from "./_components/ModuleDetailSidebar";
-import { useParams } from "next/navigation";
+import CelebrationAnimation from "./_components/CelebrationAnimation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import axios from "axios";
 
 const CoursePage = () => {
   const { cid } = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [enrolledCoursesInfo, setEnrolledCoursesInfo] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeModuleDetail, setActiveModuleDetail] = useState(null);
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
   const [activeTopicIndex, setActiveTopicIndex] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);  const [isTablet, setIsTablet] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const mainContentRef = useRef(null);
 
   // For touch gestures
@@ -55,7 +59,6 @@ const CoursePage = () => {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [activeModuleDetail]);
-
   // Handle responsive layout
   useEffect(() => {
     const handleResize = () => {
@@ -71,6 +74,36 @@ const CoursePage = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+  // Handle URL parameters for chapter and topic navigation
+  // URL structure: ?chapter=0&topic=1
+  // - chapter: corresponds to activeModuleIndex (the chapter/module index)
+  // - topic: corresponds to activeTopicIndex (the topic index within the chapter)
+  useEffect(() => {
+    const chapterParam = searchParams.get('chapter');
+    const topicParam = searchParams.get('topic');
+    
+    if (chapterParam !== null) {
+      const chapterIndex = parseInt(chapterParam, 10);
+      if (!isNaN(chapterIndex) && chapterIndex >= 0) {
+        setActiveModuleIndex(chapterIndex);
+      }
+    }
+    
+    if (topicParam !== null) {
+      const topicIndex = parseInt(topicParam, 10);
+      if (!isNaN(topicIndex) && topicIndex >= 0) {
+        setActiveTopicIndex(topicIndex);
+      }
+    }
+  }, [searchParams]);
+
+  // Update URL when chapter or topic changes
+  const updateUrl = (chapterIndex, topicIndex) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('chapter', chapterIndex.toString());
+    params.set('topic', topicIndex.toString());
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   useEffect(() => {
     getEnrolledCoursesById();
@@ -107,12 +140,10 @@ const CoursePage = () => {
         setLoading(false);
       }, 800);
     }
-  };
-
-  // Handle sub-module click
-  const handleSubModuleClick = (moduleIndex, topicIndex) => {
+  };  const handleSubModuleClick = (moduleIndex, topicIndex) => {
     setActiveModuleIndex(moduleIndex);
     setActiveTopicIndex(topicIndex);
+    updateUrl(moduleIndex, topicIndex);
 
     // On mobile, close the sidebar after clicking a topic
     if (isMobile || isTablet) {
@@ -124,7 +155,7 @@ const CoursePage = () => {
       }
     }
   };
-
+  
   // Handle chapter completion
   const handleChapterCompletion = async (chapterIndex) => {
     try {
@@ -147,14 +178,29 @@ const CoursePage = () => {
             isCompleted: response.data.data.isCompleted,
             certificate: response.data.data.certificateUrl || prevData.enrollCourses.certificate
           }
-        }));
-
-        // Show success message
-        alert(response.data.message);
-      }
-    } catch (error) {
+        }));        // Show celebration animation if course is completed
+        if (response.data.data.isCompleted) {
+          setShowCelebration(true);
+          // Show success message after celebration animation completes
+          setTimeout(() => {
+            toast.success("🎉 Congratulations! Course completed!", {
+              description: response.data.message,
+              duration: 5000,
+            });
+          }, 4500); // Wait for animation to complete (4s) + small buffer
+        } else {
+          // For regular chapter completion, show immediate feedback
+          toast.success("✅ Chapter completed!", {
+            description: response.data.message,
+            duration: 3000,
+          });
+        }
+      }    } catch (error) {
       console.error('Error completing chapter:', error);
-      alert('Failed to complete chapter. Please try again.');
+      toast.error("❌ Failed to complete chapter", {
+        description: "Please try again.",
+        duration: 3000,
+      });
     }
   };
 
@@ -236,9 +282,14 @@ const CoursePage = () => {
                 >                  <CourseContent
                     courseData={enrolledCoursesInfo}
                     activeModuleIndex={activeModuleIndex}
-                    activeTopicIndex={activeTopicIndex}
-                    setActiveModuleIndex={setActiveModuleIndex}
-                    setActiveTopicIndex={setActiveTopicIndex}
+                    activeTopicIndex={activeTopicIndex}                    setActiveModuleIndex={(index) => {
+                      setActiveModuleIndex(index);
+                      updateUrl(index, activeTopicIndex);
+                    }}
+                    setActiveTopicIndex={(index) => {
+                      setActiveTopicIndex(index);
+                      updateUrl(activeModuleIndex, index);
+                    }}
                     onChapterComplete={handleChapterCompletion}
                   />
                 </motion.div>
@@ -257,10 +308,18 @@ const CoursePage = () => {
                   />
                 )}
               </AnimatePresence>
-            </div>
-          </div>
+            </div>          </div>
         )}
       </SidebarProvider>
+        {/* Celebration Animation */}
+      <AnimatePresence>
+        {showCelebration && (
+          <CelebrationAnimation
+            isVisible={showCelebration}
+            onComplete={() => setShowCelebration(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

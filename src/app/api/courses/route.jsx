@@ -12,7 +12,6 @@ export async function GET(req) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   if (courseId) {
     
     const result = await db
