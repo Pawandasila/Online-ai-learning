@@ -137,8 +137,7 @@ const CoursePage = () => {
               </button>
             </div>
           </div>
-        ) : (
-          <div className="course-layout flex h-screen overflow-hidden relative">
+        ) : (          <div className="course-layout course-layout-flex">
             {/* Timeline Sidebar */}
             <div className="sidebar-container">
               <ChapterSidebar
@@ -146,22 +145,14 @@ const CoursePage = () => {
                 setActiveModuleDetail={setActiveModuleDetail}
                 handleSubModuleClick={handleSubModuleClick}
               />
-            </div>
-
-            {/* Main Content - animates width when module detail is shown */}
+            </div>            {/* Main Content - seamlessly connects to module detail sidebar */}
             <motion.main
-              className="main-content-area flex flex-col overflow-hidden optimized-animation relative z-10"
-              initial={{ width: isMobile ? "100%" : "calc(100vw - 320px)" }}
+              className={`main-content-area flex flex-col overflow-hidden optimized-animation relative z-10 ${
+                activeModuleDetail ? 'has-sidebar' : 'no-sidebar'
+              }`}
+              initial={{ opacity: 0.8 }}
               animate={{
-                width: isMobile
-                  ? "100%"
-                  : isTablet
-                  ? activeModuleDetail
-                    ? "calc(100vw - 660px)"
-                    : "calc(100vw - 320px)"
-                  : activeModuleDetail
-                  ? "calc(100vw - 660px)"
-                  : "calc(100vw - 320px)",
+                opacity: 1,
                 x: isMobile && activeModuleDetail ? "-340px" : 0,
               }}
               transition={{
@@ -173,7 +164,9 @@ const CoursePage = () => {
               style={{ opacity }}
             >
               <div
-                className="flex-1 p-3 overflow-y-auto w-full custom-scrollbar"
+                className={`flex-1 overflow-y-auto w-full custom-scrollbar ${
+                  activeModuleDetail ? 'pr-0' : 'p-3'
+                }`}
                 ref={mainContentRef}
               >
                 <motion.div
@@ -189,7 +182,11 @@ const CoursePage = () => {
                     damping: 30,
                     delay: 0.1,
                   }}
-                  className="content-container glass-effect p-6 sm:p-8 md:p-10 rounded-2xl shadow-xl border border-white/20"
+                  className={`content-container ${
+                    activeModuleDetail
+                      ? 'content-with-sidebar bg-white p-6 sm:p-8 md:p-10 shadow-md border border-gray-200'
+                      : 'content-without-sidebar glass-effect p-6 sm:p-8 md:p-10 shadow-xl border border-white/20'
+                  }`}
                 >
                   <CourseContent
                     courseData={enrolledCoursesInfo}

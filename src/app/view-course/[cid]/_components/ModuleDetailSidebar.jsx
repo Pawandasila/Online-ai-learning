@@ -118,11 +118,10 @@ const ModuleDetailSidebar = ({
       if (isMobile) {
         onClose();
       }
-    }
-  };
+    }  };
 
   return (
-    <AnimatePresence mode="wait">
+    <>
       {/* Overlay for mobile */}
       {isMobile && (
         <motion.div
@@ -145,14 +144,12 @@ const ModuleDetailSidebar = ({
           damping: 30,
           mass: 1,
         }}
-        className="module-detail-sidebar fixed lg:sticky top-0 right-0 h-screen z-40 bg-white border-l border-gray-200 shadow-xl flex flex-col rounded-l-2xl lg:rounded-none w-[340px] overflow-hidden"
+        className="module-detail-sidebar fixed lg:absolute top-0 right-0 h-screen z-40 bg-white border-l border-gray-200 lg:shadow-none shadow-xl flex flex-col rounded-l-2xl lg:rounded-none w-[360px] overflow-hidden"
       >
-        {" "}
-        {/* Header with close button */}
-        <div className="py-5 px-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-br from-white via-indigo-50 to-blue-50">
+        <div className="py-5 px-6 border-b border-gray-200 flex items-center justify-between bg-white">
           <h2 className="font-bold text-gray-800 flex items-center gap-3">
-            <div className="p-2 bg-white rounded-xl shadow-sm border border-indigo-100">
-              <BookOpenIcon size={18} className="text-indigo-600" />
+            <div className="p-2 bg-gray-50 rounded-xl border border-gray-200">
+              <BookOpenIcon size={18} className="text-gray-600" />
             </div>
             <div>
               <span className="text-lg">Module {moduleNumber}</span>
@@ -163,7 +160,7 @@ const ModuleDetailSidebar = ({
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-all duration-200 hover:bg-white hover:bg-opacity-80 p-2 rounded-xl group"
+            className="text-gray-400 hover:text-gray-600 transition-all duration-200 hover:bg-gray-50 p-2 rounded-xl group"
             aria-label="Close module detail"
           >
             <X
@@ -173,7 +170,7 @@ const ModuleDetailSidebar = ({
           </button>
         </div>
         {/* Content area */}
-        <div className="flex-grow overflow-y-auto px-6 py-5 custom-scrollbar bg-gradient-to-b from-white to-gray-50">
+        <div className="flex-grow overflow-y-auto px-6 py-5 custom-scrollbar bg-white">
           {/* Topics section */}
           <section className="mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -196,9 +193,9 @@ const ModuleDetailSidebar = ({
                       key={index}
                       className={`p-4 rounded-xl border-l-4 ${
                         hoveredTopic === index
-                          ? "border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 shadow-md"
+                          ? "border-blue-500 bg-blue-50 shadow-sm"
                           : "border-blue-300 bg-white hover:bg-blue-50"
-                      } transition-all duration-300 cursor-pointer flex items-center shadow-sm hover:shadow-md group border border-gray-100 hover:border-blue-200`}
+                      } transition-all duration-300 cursor-pointer flex items-center shadow-sm hover:shadow-sm group border border-gray-100 hover:border-blue-200`}
                       whileHover={{ x: 3, scale: 1.01 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleTopicClick(index)}
@@ -282,7 +279,8 @@ const ModuleDetailSidebar = ({
                       )
                     }
                   >
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center mr-4 flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform">
+                    {" "}
+                    <div className="w-12 h-12 rounded-xl bg-red-500 flex items-center justify-center mr-4 flex-shrink-0 group-hover:scale-110 transition-transform">
                       <Play size={18} className="text-white ml-0.5" />
                     </div>
                     <div className="flex-1">
@@ -319,7 +317,7 @@ const ModuleDetailSidebar = ({
                     key={index}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="px-3 py-2 text-sm font-medium rounded-full bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border border-purple-200 hover:from-purple-200 hover:to-blue-200 transition-all cursor-pointer"
+                    className="px-3 py-2 text-sm font-medium rounded-full bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-all cursor-pointer"
                   >
                     {tag}
                   </motion.span>
@@ -333,7 +331,7 @@ const ModuleDetailSidebar = ({
             <motion.button
               whileHover={{ scale: 1.02, y: -1 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl flex items-center justify-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
+              className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-3 transition-all duration-300 font-semibold"
             >
               <CheckCircle size={18} />
               <span>Mark Module as Complete</span>

@@ -236,7 +236,6 @@ const CourseContent = ({ courseData, activeModuleIndex = 0, activeTopicIndex = 0
       </div>
     ));
   };
-
   // Function to get YouTube video ID from topic
   const getYoutubeVideoId = () => {
     if (currentTopic?.videoId) {
@@ -255,7 +254,21 @@ const CourseContent = ({ courseData, activeModuleIndex = 0, activeTopicIndex = 0
     return null;
   };
 
+  // Function to get iframe URL from topic
+  const getIframeUrl = () => {
+    if (currentTopic?.iframeUrl) {
+      return currentTopic.iframeUrl;
+    }
+    
+    if (currentTopic?.url && currentTopic.url.includes('iframe')) {
+      return currentTopic.url;
+    }
+    
+    return null;
+  };
+
   const videoId = getYoutubeVideoId();
+  const iframeUrl = getIframeUrl();
 
   return (
     <div className="course-content-container" ref={contentRef}>
@@ -366,23 +379,38 @@ const CourseContent = ({ courseData, activeModuleIndex = 0, activeTopicIndex = 0
                   {formatContent(topicContent)}
                 </>
               )}
-            </div>
-
-            {/* YouTube Video */}
-            {videoId && (
+            </div>            {/* YouTube Video or General Iframe */}
+            {(videoId || iframeUrl) && (
               <div className="mt-6 mb-8">
-                <div className="youtube-container">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&autoplay=0`}
-                    title="YouTube video player"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
+                <div className="relative w-full rounded-xl overflow-hidden shadow-md border border-gray-200">
+                  {videoId ? (
+                    <div className="youtube-container">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&autoplay=0`}
+                        title="YouTube video player"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-64 md:h-80 lg:h-96"
+                      ></iframe>
+                    </div>
+                  ) : iframeUrl ? (
+                    <div className="iframe-container">
+                      <iframe
+                        src={iframeUrl}
+                        title="Topic content"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-64 md:h-80 lg:h-96 border-none"
+                        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                      ></iframe>
+                    </div>
+                  ) : null}
                 </div>
-                <p className="text-xs text-gray-500 mt-2 text-center">
+                <p className="text-xs text-gray-500 mt-3 text-center flex items-center justify-center gap-1">
+                  <ExternalLink className="h-3 w-3" />
                   {typeof currentTopic === 'string' 
                     ? currentTopic 
-                    : currentTopic?.topic || "Video resource for this topic"}
+                    : currentTopic?.topic || "Interactive content for this topic"}
                 </p>
               </div>
             )}

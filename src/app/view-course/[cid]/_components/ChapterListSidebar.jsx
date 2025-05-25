@@ -41,6 +41,37 @@ const ChapterSidebar = ({
   // Track course progress
   const [progress, setProgress] = useState(0);
 
+  // Function to calculate total course duration
+  const calculateTotalDuration = (modules) => {
+    if (!Array.isArray(modules) || modules.length === 0) return "0 hours";
+
+    let totalMinutes = 0;
+    modules.forEach((module) => {
+      const duration = module.duration || "1 hour";
+      // Extract numbers from duration string (e.g., "2 hours", "1.5 hours", "30 minutes")
+      const match = duration.match(/(\d+(?:\.\d+)?)/);
+      if (match) {
+        const value = parseFloat(match[1]);
+        if (duration.toLowerCase().includes("hour")) {
+          totalMinutes += value * 60;
+        } else if (duration.toLowerCase().includes("minute")) {
+          totalMinutes += value;
+        }
+      }
+    });
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours === 0) {
+      return `${minutes} minutes`;
+    } else if (minutes === 0) {
+      return `${hours} hour${hours > 1 ? "s" : ""}`;
+    } else {
+      return `${hours}h ${minutes}m`;
+    }
+  };
+
   // Keep local state in sync with parent state
   const updateModuleDetail = (detail) => {
     setLocalActiveModuleDetail(detail);
@@ -142,7 +173,7 @@ const ChapterSidebar = ({
     }
   };
 
-  console.log(course?.courseJson?.course)
+  console.log(course?.courseJson?.course);
 
   return (
     <>
@@ -215,11 +246,11 @@ const ChapterSidebar = ({
                     <span className="font-medium">
                       {courseModules?.length || 0} Modules
                     </span>
-                  </div>
+                  </div>{" "}
                   <div className="flex items-center gap-1.5 bg-indigo-50 px-2.5 py-1 rounded-md">
                     <Clock size={14} className="text-indigo-600" />
                     <span className="font-medium">
-                      {course?.courseJson?.course?.duration} Hours
+                      {calculateTotalDuration(courseModules)}
                     </span>
                   </div>
                 </div>
@@ -252,12 +283,12 @@ const ChapterSidebar = ({
                   Course Modules
                 </h3>
               </div>
-              {/* Timeline Content */}
+              {/* Timeline Content */}{" "}
               <div className="timeline px-3 pb-6 pt-3 overflow-y-auto">
                 {courseModules.length > 0 ? (
                   <div className="relative">
-                    {/* Timeline main line */}
-                    <div className="absolute left-7 top-0 h-full w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-indigo-300 rounded-full opacity-60" />
+                    {/* Single Timeline main line */}
+                    <div className="absolute left-6 top-2 bottom-2 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-indigo-300 rounded-full opacity-60" />
 
                     {courseModules.map((module, moduleIndex) => {
                       const isActive = activeModule === moduleIndex;
@@ -268,7 +299,7 @@ const ChapterSidebar = ({
 
                       return (
                         <div key={moduleIndex} className="mb-4">
-                          {/* Module Header */}
+                          {/* Module Header */}{" "}
                           <motion.div
                             onClick={() => {
                               // Toggle selected module
@@ -309,7 +340,7 @@ const ChapterSidebar = ({
                                 }
                               }
                             }}
-                            className={`relative flex items-start py-3 pl-12 pr-4 rounded-xl cursor-pointer transition-all duration-300 ${
+                            className={`relative flex items-center py-2 pl-12 pr-4 rounded-lg cursor-pointer transition-all duration-300 ${
                               isActive
                                 ? "bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md border border-blue-200"
                                 : "hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200"
@@ -328,7 +359,7 @@ const ChapterSidebar = ({
                           >
                             {/* Timeline Node */}
                             <div
-                              className={`absolute left-6 top-4 h-7 w-7 rounded-full border-3 flex items-center justify-center z-10 transition-all duration-300 shadow-lg ${
+                              className={`absolute left-6 top-1/2 transform -translate-y-1/2 h-6 w-6 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-300 shadow-sm ${
                                 isCompleted
                                   ? "bg-gradient-to-br from-green-400 to-green-600 border-green-300"
                                   : isActive
@@ -337,9 +368,9 @@ const ChapterSidebar = ({
                               }`}
                             >
                               {isCompleted ? (
-                                <CheckCircle className="h-4 w-4 text-white" />
+                                <CheckCircle className="h-3 w-3 text-white" />
                               ) : isActive ? (
-                                <Play className="h-3.5 w-3.5 text-white fill-white ml-0.5" />
+                                <Play className="h-3 w-3 text-white fill-white ml-0.5" />
                               ) : (
                                 <span className="text-xs font-bold text-gray-600 group-hover:text-blue-600">
                                   {moduleIndex + 1}
@@ -347,10 +378,10 @@ const ChapterSidebar = ({
                               )}
                             </div>
 
-                            {/* Module Content */}
-                            <div className="flex-grow">
+                            {/* Module Content - Simplified */}
+                            <div className="flex-grow min-w-0">
                               <p
-                                className={`font-semibold text-base leading-tight mb-1 ${
+                                className={`font-semibold text-sm leading-tight truncate ${
                                   isActive ? "text-blue-700" : "text-gray-800"
                                 }`}
                               >
@@ -359,27 +390,15 @@ const ChapterSidebar = ({
                                   ""
                                 )}
                               </p>
-                              <div className="flex items-center flex-wrap gap-3 text-sm text-gray-500">
+                              <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
                                 <div className="flex items-center gap-1">
-                                  <Clock size={14} className="text-gray-400" />
-                                  <span>{module.duration || "1-2 hours"}</span>
+                                  <Clock size={12} className="text-gray-400" />
+                                  <span>{module.duration || "1 hour"}</span>
                                 </div>
-                                {module.youtubeVideos &&
-                                  module.youtubeVideos.length > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <Video
-                                        size={14}
-                                        className="text-red-500"
-                                      />
-                                      <span>
-                                        {module.youtubeVideos.length} videos
-                                      </span>
-                                    </div>
-                                  )}
                                 {topics.length > 0 && (
                                   <div className="flex items-center gap-1">
                                     <BookOpen
-                                      size={14}
+                                      size={12}
                                       className="text-blue-500"
                                     />
                                     <span>{topics.length} topics</span>
@@ -389,7 +408,7 @@ const ChapterSidebar = ({
                             </div>
 
                             {/* Toggle Icon */}
-                            <div className="flex-shrink-0 pt-1 ml-3">
+                            <div className="flex-shrink-0 ml-2">
                               <motion.div
                                 animate={{ rotate: isActive ? 90 : 0 }}
                                 transition={{
