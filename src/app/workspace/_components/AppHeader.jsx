@@ -4,10 +4,12 @@ import { Search } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
-const AppHeader = () => {
+const AppHeader = ({ hideSidebar = false }) => {
   return (
     <header className="flex rounded-2xl  items-center gap-4 border-b border-sidebar-border bg-sidebar p-2 shadow-sm ">
-      <SidebarTrigger className="text-gray-500 hover:text-gray-800 transition-colors" />
+      {!hideSidebar && (
+        <SidebarTrigger className="text-gray-500 hover:text-gray-800 transition-colors" />
+      )}
 
       <div className="relative flex-1 max-w-md">
         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">

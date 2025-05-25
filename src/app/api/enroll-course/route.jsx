@@ -81,7 +81,10 @@ export async function POST(req) {
 export async function GET(req) {
   try {
     const user = await currentUser();
-    
+
+    const { searchParams } = new URL(req.url);
+    const courseId = searchParams.get("cid");
+
     if (!user || !user.primaryEmailAddress?.emailAddress) {
       return NextResponse.json(
         {
@@ -90,24 +93,55 @@ export async function GET(req) {
         },
         { status: 401 }
       );
-    }
-    
-    const userEmail = user.primaryEmailAddress.emailAddress;
-    
-    const result = await db
-      .select()
-      .from(coursesTable)
-      .innerJoin(
-        enrollCourseTable,
-        eq(coursesTable.cid, enrollCourseTable.cid)
-      )
-      .where(eq(enrollCourseTable.userEmail, userEmail))
-      .orderBy(desc(enrollCourseTable.cid));
+    }    if (courseId) {
+      const userEmail = user.primaryEmailAddress.emailAddress;
+      
+      const result = await db
+        .select()
+        .from(coursesTable)
+        .innerJoin(
+          enrollCourseTable,
+          eq(coursesTable.cid, enrollCourseTable.cid)
+        )
+        .where(
+          and(
+            eq(enrollCourseTable.userEmail, userEmail),
+            eq(enrollCourseTable.cid, courseId)
+          )
+        );
 
-    return NextResponse.json({
-      success: true,
-      data: result
-    });
+      if (result.length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Course not found",
+          },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: result[0],
+      });
+    } else {
+      const userEmail = user.primaryEmailAddress.emailAddress;
+
+      const result = await db
+        .select()
+        .from(coursesTable)
+        .innerJoin(
+          enrollCourseTable,
+          eq(coursesTable.cid, enrollCourseTable.cid)
+        )
+        .where(eq(enrollCourseTable.userEmail, userEmail))
+        .orderBy(desc(enrollCourseTable.cid));
+
+      return NextResponse.json({
+        success: true,
+        data: result,
+      });
+    }
   } catch (error) {
     console.error("Error fetching enrolled courses:", error);
     return NextResponse.json(

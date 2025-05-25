@@ -108,7 +108,11 @@ const EnrolledCourseCard = ({ course, progress, completedChapters }) => {
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center"
           >
             {progressValue > 0 ? "Continue Learning" : "Start Learning"}
-            {loading ? <Loader2Icon className="size-5 animate-spin ml-1"/> : <ChevronRight size={18} className="ml-1" />}
+            {loading ? (
+              <Loader2Icon className="size-5 animate-spin ml-1" />
+            ) : (
+              <ChevronRight size={18} className="ml-1" />
+            )}
           </button>
         </Link>
       </div>

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -16,8 +16,27 @@ import { toast } from "sonner";
 
 const CourseCard = ({ course }) => {
   const [loading, setLoading] = useState(false);
-  const [isEnrolled, setIsEnrolled] = useState(course?.progress > 0);
-
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  
+  // Check if the user is already enrolled in this course
+  useEffect(() => {
+    const checkEnrollmentStatus = async () => {
+      try {
+        const response = await axios.get('/api/enroll-course');
+        if (response.data?.success && response.data.data) {
+          // Check if the current course ID is in the enrolled courses
+          const isEnrolled = response.data.data.some(
+            enrollment => enrollment.courses?.cid === course.cid
+          );
+          setIsEnrolled(isEnrolled);
+        }
+      } catch (error) {
+        console.error('Error checking enrollment status:', error);
+      }
+    };
+    
+    checkEnrollmentStatus();
+  }, [course.cid]);
   const onEnroll = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -36,15 +55,18 @@ const CourseCard = ({ course }) => {
       });
 
       toast.dismiss(toastId);
-      toast.success("Enrolled Successfully!", {
-        description: "You have successfully enrolled in the course!",
-      });
-      if (result?.data.message === "Already enrolled") {
+      
+      if (result?.data?.message === "Already enrolled") {
         toast.info("Already enrolled", {
           description: "You are already enrolled in this course.",
         });
-        return;
+      } else {
+        toast.success("Enrolled Successfully!", {
+          description: "You have successfully enrolled in the course!",
+        });
       }
+      
+      // Set enrolled status to true in both cases
       setIsEnrolled(true);
     } catch (error) {
       toast.dismiss(toastId);
@@ -147,7 +169,7 @@ const CourseCard = ({ course }) => {
     }
     return 0;
   };
-
+ 
   const chapterCount = getChapterCount();
 
   const getTotalHours = () => {
@@ -271,9 +293,7 @@ const CourseCard = ({ course }) => {
               Generate Course
               <Wand2 className="ml-2 w-4 h-4" />
             </motion.button>
-          </Link>
-        ) : isEnrolled || progress > 0 ? (
-          <Link href={`/courses/${course?.cid || ""}`}>
+          </Link>        ) : isEnrolled ? (          <Link href={`/workspace/course/${course?.cid}`}>
             <motion.button
               className={`w-full py-2 rounded-lg text-white font-medium flex items-center justify-center ${colorClasses.button} transition-colors duration-200`}
               variants={buttonVariants}

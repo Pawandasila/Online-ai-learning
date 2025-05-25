@@ -12,6 +12,7 @@ import CourseListLoading from "./CourseListLoading";
 
 const CourseList = () => {
   const [courseList, setCourseList] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const { isLoaded, user } = useUser();
 
@@ -23,13 +24,15 @@ const CourseList = () => {
     }
   }, [isLoaded, user]);
 
+  
+
+
   const getCourse = async () => {
     setLoading(true);
     const toastId = toast.loading("Loading your courses...");
 
     try {
       const response = await axios.get("/api/courses");
-      console.log(response.data)
 
       if (Array.isArray(response.data)) {
         setCourseList(response.data);
@@ -37,6 +40,7 @@ const CourseList = () => {
         if (response.data.length > 0) {
           toast.success(`Loaded ${response.data.length} courses`);
         }
+        console.log(response.data);
       } else {
         toast.dismiss(toastId);
         toast.error("Failed to load courses properly");

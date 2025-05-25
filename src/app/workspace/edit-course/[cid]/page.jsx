@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import CourseInfo from "./_components/CourseInfo";
 
-export default function Page() {
+export default function EditPage({viewCourse = false}) {
   const { cid } = useParams();
   const [loading, setLoading] = useState(false);
   const [courseInfo, setCourseInfo] = useState(null);
@@ -36,6 +36,6 @@ export default function Page() {
   }, [cid]);
 
   return <div>
-    <CourseInfo course = {courseInfo} loading={loading} error={error} />
+    <CourseInfo course = {courseInfo} loading={loading} error={error} viewCourse={viewCourse} />
   </div>;
 }

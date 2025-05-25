@@ -22,7 +22,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-const CourseInfo = ({ course, loading, error }) => {
+const CourseInfo = ({ course, loading, error, viewCourse }) => {
   const [expandedModule, setExpandedModule] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
   const moduleRefs = useRef([]);
@@ -44,7 +44,7 @@ const CourseInfo = ({ course, loading, error }) => {
 
   // Fix: Access the correct data structure for course and modules
   const courseData = course?.courseJson?.course || {};
-  
+
   // Fix: Access modules from the correct path in the data structure
   const courseModules = courseData?.modules || [];
 
@@ -60,49 +60,56 @@ const CourseInfo = ({ course, loading, error }) => {
   const generateCourseContent = async () => {
     // Create a loading toast and get its ID
     const toastId = toast.loading("Generating AI course content...", {
-      description: "This may take a few minutes. Please wait."
+      description: "This may take a few minutes. Please wait.",
     });
-    
+
     try {
       setLoadingInfo(true);
-      
+
       // Start the API request to generate course content
       const result = await axios.post("/api/generate-ai-course", { course });
-      
+
       // Dismiss the loading toast and show success
       toast.dismiss(toastId);
       toast.success("Course generated successfully!", {
-        description: "Redirecting to your workspace..."
+        description: "Redirecting to your workspace...",
       });
-      
+
       console.log("Generation result:", result.data);
-      router.push('/workspace');
+      router.push("/workspace");
     } catch (err) {
       // Dismiss the loading toast and show error
       toast.dismiss(toastId);
-      
+
       const responseData = err.response?.data;
       const isOverloaded = responseData?.isOverloaded;
-      
+
       if (isOverloaded) {
         toast.error("AI Service Temporarily Unavailable", {
-          description: responseData?.suggestion || "The AI service is currently experiencing high demand. Please try again in a few minutes.",
+          description:
+            responseData?.suggestion ||
+            "The AI service is currently experiencing high demand. Please try again in a few minutes.",
           duration: 6000,
           action: {
             label: "Retry",
-            onClick: () => generateCourseContent()
-          }
+            onClick: () => generateCourseContent(),
+          },
         });
       } else {
         toast.error("Failed to generate course", {
-          description: responseData?.details || err.message || "An unknown error occurred"
+          description:
+            responseData?.details || err.message || "An unknown error occurred",
         });
       }
-      
+
       console.error("Generation error:", err);
     } finally {
       setLoadingInfo(false);
     }
+  };
+
+  const continueLearning = () => {
+    router.push(`/view-course/${course.cid}`);
   };
 
   const containerVariants = {
@@ -127,14 +134,15 @@ const CourseInfo = ({ course, loading, error }) => {
     },
   };
 
-  const totalHours = courseModules && Array.isArray(courseModules)
-    ? courseModules.reduce((total, module) => {
-        if (!module) return total;
-        const durationParts = module.duration?.split(" ");
-        const hours = parseInt(durationParts?.[0]) || 0;
-        return total + hours;
-      }, 0)
-    : 0;
+  const totalHours =
+    courseModules && Array.isArray(courseModules)
+      ? courseModules.reduce((total, module) => {
+          if (!module) return total;
+          const durationParts = module.duration?.split(" ");
+          const hours = parseInt(durationParts?.[0]) || 0;
+          return total + hours;
+        }, 0)
+      : 0;
 
   return (
     <motion.div
@@ -143,7 +151,6 @@ const CourseInfo = ({ course, loading, error }) => {
       animate="visible"
       variants={containerVariants}
     >
-    
       <div className="relative h-64 md:h-80 overflow-hidden rounded-xl shadow-lg mb-8">
         <motion.img
           src={course?.bannerImageUrl || "/default-course-banner.jpg"}
@@ -173,7 +180,9 @@ const CourseInfo = ({ course, loading, error }) => {
               className="text-white/80 md:w-3/4 mt-3 text-base md:text-lg"
               variants={itemVariants}
             >
-              {courseData?.description ? courseData.description.split(".")[0] + "." : "No description available."}
+              {courseData?.description
+                ? courseData.description.split(".")[0] + "."
+                : "No description available."}
             </motion.p>
           </div>
         </div>
@@ -338,7 +347,9 @@ const CourseInfo = ({ course, loading, error }) => {
                         >
                           <div className="flex items-center">
                             <h3 className="font-medium text-lg text-gray-800">
-                              {module.chapterName ? module.chapterName.replace(/Module \d+: /, "") : "Unnamed Module"}
+                              {module.chapterName
+                                ? module.chapterName.replace(/Module \d+: /, "")
+                                : "Unnamed Module"}
                             </h3>
                           </div>
                           <div className="flex items-center space-x-3">
@@ -349,7 +360,8 @@ const CourseInfo = ({ course, loading, error }) => {
                               animate={{
                                 rotate: expandedModule === index ? 180 : 0,
                               }}
-                              transition={{ duration: 0.3 }}>
+                              transition={{ duration: 0.3 }}
+                            >
                               <ChevronDown className="h-5 w-5 text-gray-400" />
                             </motion.div>
                           </div>
@@ -369,7 +381,8 @@ const CourseInfo = ({ course, loading, error }) => {
                                 Topics Covered:
                               </h4>
                               <ul className="space-y-3">
-                                {module.topics && Array.isArray(module.topics) ? (
+                                {module.topics &&
+                                Array.isArray(module.topics) ? (
                                   module.topics.map((topic, topicIndex) => (
                                     <motion.li
                                       key={topicIndex}
@@ -379,11 +392,15 @@ const CourseInfo = ({ course, loading, error }) => {
                                       transition={{ delay: topicIndex * 0.05 }}
                                     >
                                       <CheckCircle className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                                      <span className="text-gray-700">{topic}</span>
+                                      <span className="text-gray-700">
+                                        {topic}
+                                      </span>
                                     </motion.li>
                                   ))
                                 ) : (
-                                  <li className="text-gray-500 italic p-3">No topics available for this module.</li>
+                                  <li className="text-gray-500 italic p-3">
+                                    No topics available for this module.
+                                  </li>
                                 )}
                               </ul>
                               <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end">
@@ -419,7 +436,9 @@ const CourseInfo = ({ course, loading, error }) => {
                     </div>
                   ))
                 ) : (
-                  <div className="text-gray-500 italic p-3">No modules available for this course.</div>
+                  <div className="text-gray-500 italic p-3">
+                    No modules available for this course.
+                  </div>
                 )}
 
                 {/* Final marker */}
@@ -479,11 +498,21 @@ const CourseInfo = ({ course, loading, error }) => {
                     className="w-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={generateCourseContent}
+                    onClick={
+                      viewCourse ? continueLearning : generateCourseContent
+                    }
                     disabled={loadingInfo}
                   >
-                    {loadingInfo ? <Loader2Icon className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5" />}
-                    {loadingInfo ? "Generating..." : "Generate AI Course Content"}
+                    {loadingInfo ? (
+                      <Loader2Icon className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Play className="h-5 w-5" />
+                    )}
+                    {viewCourse
+                      ? "Continue Learning"
+                      : loadingInfo
+                      ? "Generating..."
+                      : "Generate AI Course Content"}
                   </motion.button>
                 </div>
               </div>
