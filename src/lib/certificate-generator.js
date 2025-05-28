@@ -1,5 +1,6 @@
-import { createCanvas, loadImage } from 'canvas';
+import { createCanvas, loadImage, registerFont } from 'canvas';
 import { v2 as cloudinary } from 'cloudinary';
+import path from 'path';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -8,8 +9,41 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Helper function to register fonts safely
+function registerFontsSafely() {
+  try {
+    // Try to register system fonts if available
+    const fontsToTry = [
+      // Common system serif fonts
+      { family: 'Georgia', path: path.join(process.cwd(), 'public/fonts/georgia.ttf') },
+      { family: 'Times', path: path.join(process.cwd(), 'public/fonts/times.ttf') },
+    ];
+
+    fontsToTry.forEach(font => {
+      try {
+        registerFont(font.path, { family: font.family });
+      } catch (e) {
+        // Font file doesn't exist, will fallback to default
+        console.log(`Font ${font.family} not found, using fallback`);
+      }
+    });
+  } catch (error) {
+    console.log('Font registration failed, using default fonts');
+  }
+}
+
 export async function generateCertificate(userName, courseName, completionDate) {
   try {
+    // Validate input parameters
+    if (!userName || !courseName || !completionDate) {
+      throw new Error(`Missing required parameters: userName=${userName}, courseName=${courseName}, completionDate=${completionDate}`);
+    }
+
+    // Register fonts safely
+    registerFontsSafely();
+
+    console.log('Generating certificate for:', { userName, courseName, completionDate });
+
     // Create canvas with higher resolution for better quality
     const canvas = createCanvas(1400, 1000);
     const ctx = canvas.getContext('2d');
@@ -71,24 +105,24 @@ export async function generateCertificate(userName, courseName, completionDate) 
     ctx.fill();
     ctx.beginPath();
     ctx.arc(1250, 850, 30, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Certificate header with shadow effect
+    ctx.fill();    // Certificate header with shadow effect
     ctx.textAlign = 'center';
     
     // Shadow for title
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.font = 'bold 72px Georgia, serif';
+    ctx.font = 'bold 72px serif';
     ctx.fillText('CERTIFICATE', 703, 183);
-    ctx.font = 'bold 42px Georgia, serif';
+    ctx.font = 'bold 42px serif';
     ctx.fillText('OF COMPLETION', 703, 233);
     
     // Main title
     ctx.fillStyle = '#1e40af';
-    ctx.font = 'bold 72px Georgia, serif';
+    ctx.font = 'bold 72px serif';
     ctx.fillText('CERTIFICATE', 700, 180);
-    ctx.font = 'bold 42px Georgia, serif';
+    ctx.font = 'bold 42px serif';
     ctx.fillText('OF COMPLETION', 700, 230);
+
+    console.log('Certificate title rendered');
 
     // Elegant decorative line with ornaments
     const lineGradient = ctx.createLinearGradient(250, 280, 1150, 280);
@@ -111,21 +145,23 @@ export async function generateCertificate(userName, courseName, completionDate) 
     ctx.translate(700, 280);
     ctx.rotate(Math.PI / 4);
     ctx.fillRect(-8, -8, 16, 16);
-    ctx.restore();
-
-    // "This is to certify that" text
+    ctx.restore();    // "This is to certify that" text
     ctx.fillStyle = '#4b5563';
-    ctx.font = '38px Georgia, serif';
+    ctx.font = '38px serif';
     ctx.fillText('This is to certify that', 700, 360);
+
+    console.log('Certify text rendered');
 
     // User name with elegant styling and shadow
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.font = 'bold 58px Brush Script MT, cursive';
+    ctx.font = 'bold 58px serif';
     ctx.fillText(userName, 703, 443);
     
     ctx.fillStyle = '#1e40af';
-    ctx.font = 'bold 58px Brush Script MT, cursive';
+    ctx.font = 'bold 58px serif';
     ctx.fillText(userName, 700, 440);
+
+    console.log('User name rendered:', userName);
 
     // Underline for name
     const nameWidth = ctx.measureText(userName).width;
@@ -134,11 +170,9 @@ export async function generateCertificate(userName, courseName, completionDate) 
     ctx.beginPath();
     ctx.moveTo(700 - nameWidth/2 - 20, 470);
     ctx.lineTo(700 + nameWidth/2 + 20, 470);
-    ctx.stroke();
-
-    // Course completion text
+    ctx.stroke();    // Course completion text
     ctx.fillStyle = '#4b5563';
-    ctx.font = '38px Georgia, serif';
+    ctx.font = '38px serif';
     ctx.fillText('has successfully completed the course', 700, 540);
 
     // Course name with improved sizing and alignment
@@ -162,19 +196,17 @@ export async function generateCertificate(userName, courseName, completionDate) 
       }
       lines.push(currentLine);
       return lines;
-    }
-
-    // Determine appropriate font size based on course name length
+    }    // Determine appropriate font size based on course name length
     let fontSize = 46;
     let maxWidth = 1000; // Maximum width for course name
     
-    ctx.font = `bold ${fontSize}px Georgia, serif`;
+    ctx.font = `bold ${fontSize}px serif`;
     let courseNameWidth = ctx.measureText(courseName).width;
     
     // Adjust font size if text is too wide
     while (courseNameWidth > maxWidth && fontSize > 28) {
       fontSize -= 2;
-      ctx.font = `bold ${fontSize}px Georgia, serif`;
+      ctx.font = `bold ${fontSize}px serif`;
       courseNameWidth = ctx.measureText(courseName).width;
     }
     
@@ -206,30 +238,32 @@ export async function generateCertificate(userName, courseName, completionDate) 
       // Shadow
       ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
       ctx.fillText(line, 703, y + 3);
-      
-      // Main text
+        // Main text
       ctx.fillStyle = '#059669';
       ctx.fillText(line, 700, y);
     });
 
+    console.log('Course name rendered:', courseName);
+
     // Completion date with proper spacing
     const dateY = startY + totalHeight + 60;
     ctx.fillStyle = '#6b7280';
-    ctx.font = '32px Georgia, serif';
+    ctx.font = '32px serif';
     ctx.fillText(`Completed on ${completionDate}`, 700, dateY);
+
+    console.log('Completion date rendered:', completionDate);
 
     // Signature section with enhanced styling
     const signatureY = Math.max(dateY + 80, 800); // Ensure minimum distance from bottom
     
     ctx.textAlign = 'left';
-    
-    // Left signature area
+      // Left signature area
     ctx.fillStyle = '#374151';
-    ctx.font = 'bold 28px Georgia, serif';
+    ctx.font = 'bold 28px serif';
     ctx.fillText('Skill Sprint', 180, signatureY);
     
     ctx.fillStyle = '#6b7280';
-    ctx.font = '22px Georgia, serif';
+    ctx.font = '22px serif';
     ctx.fillText('Authorized', 180, signatureY + 30);
     
     // Signature line with gradient
@@ -246,9 +280,8 @@ export async function generateCertificate(userName, courseName, completionDate) 
     // Certificate ID and date section
     ctx.textAlign = 'right';
     const certificateId = `CERT-${Date.now().toString(36).toUpperCase()}`;
-    
-    ctx.fillStyle = '#374151';
-    ctx.font = 'bold 24px Georgia, serif';
+      ctx.fillStyle = '#374151';
+    ctx.font = 'bold 24px serif';
     ctx.fillText('Certificate ID:', 1220, signatureY - 10);
     
     ctx.fillStyle = '#3b82f6';
@@ -256,7 +289,7 @@ export async function generateCertificate(userName, courseName, completionDate) 
     ctx.fillText(certificateId, 1220, signatureY + 20);
     
     ctx.fillStyle = '#6b7280';
-    ctx.font = '20px Georgia, serif';
+    ctx.font = '20px serif';
     ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 1220, signatureY + 50);
 
     // Add seal/badge (positioned relative to signature area)
@@ -277,12 +310,13 @@ export async function generateCertificate(userName, courseName, completionDate) 
     ctx.beginPath();
     ctx.arc(sealX, sealY, 45, 0, Math.PI * 2);
     ctx.stroke();
-    
-    ctx.fillStyle = '#3b82f6';
-    ctx.font = 'bold 16px Arial';
+      ctx.fillStyle = '#3b82f6';
+    ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('VERIFIED', sealX, sealY - 10);
     ctx.fillText('COMPLETION', sealX, sealY + 10);
+
+    console.log('Certificate generation completed successfully');
 
     // Convert canvas to buffer with high quality
     const buffer = canvas.toBuffer('image/png', { 
