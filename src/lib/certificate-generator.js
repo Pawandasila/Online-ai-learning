@@ -230,7 +230,7 @@ export async function generateCertificate(userName, courseName, completionDate) 
     
     ctx.fillStyle = '#6b7280';
     ctx.font = '22px Georgia, serif';
-    ctx.fillText('Authorized Signature', 180, signatureY + 30);
+    ctx.fillText('Authorized', 180, signatureY + 30);
     
     // Signature line with gradient
     const sigGradient = ctx.createLinearGradient(180, signatureY + 50, 450, signatureY + 50);
