@@ -39,21 +39,21 @@ const EnrolledCourseCard = ({ course, progress, completedChapters }) => {
   const handleTestCompletion = async () => {
     setCompleting(true);
     try {
-      const response = await fetch('/api/complete-course', {
-        method: 'POST',
+      const response = await fetch("/api/complete-course", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           courseId: course.courseId || course.cid,
         }),
       });
-      
+
       if (response.ok) {
         window.location.reload(); // Refresh to show updated state
       }
     } catch (error) {
-      console.error('Error completing course:', error);
+      console.error("Error completing course:", error);
     } finally {
       setCompleting(false);
     }
@@ -102,9 +102,10 @@ const EnrolledCourseCard = ({ course, progress, completedChapters }) => {
           <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
             <h3 className="text-white text-xl font-bold px-4 text-center">
               {courseName}
-            </h3>          </div>
+            </h3>
+          </div>
         )}
-        
+
         {/* Difficulty Badge and Completion Status */}
         <div className="absolute top-4 right-4 flex flex-col gap-2">
           <div className="bg-white px-3 py-1 rounded-full text-sm font-medium shadow-sm">
@@ -159,13 +160,14 @@ const EnrolledCourseCard = ({ course, progress, completedChapters }) => {
                 {typeof category === "string" ? category.trim() : category}
               </span>
             ))}
-            {categories.length > 2 && (              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+            {categories.length > 2 && (
+              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
                 +{categories.length - 2} more
               </span>
             )}
           </div>
         )}
-        
+
         {/* Action Buttons */}
         <div className="space-y-3">
           {/* Continue Learning Button */}
@@ -181,7 +183,8 @@ const EnrolledCourseCard = ({ course, progress, completedChapters }) => {
                 <ChevronRight size={18} className="ml-2" />
               )}
             </button>
-          </Link>          {/* Certificate Button - Show only if course is completed and has certificate */}
+          </Link>{" "}
+          {/* Certificate Button - Show only if course is completed and has certificate */}
           {showCertificateButton && (
             <PremiumCertificateGate>
               <button
@@ -193,9 +196,8 @@ const EnrolledCourseCard = ({ course, progress, completedChapters }) => {
               </button>
             </PremiumCertificateGate>
           )}
-
           {/* Test Completion Button - Only show for development/testing if not completed */}
-          {!isCompleted && process.env.NODE_ENV === 'development' && (
+          {!isCompleted && process.env.NODE_ENV === "development" && (
             <button
               onClick={handleTestCompletion}
               disabled={completing}

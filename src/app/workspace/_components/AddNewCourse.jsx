@@ -48,7 +48,8 @@ const AddNewCourse = ({ children, onCourseCreated }) => {
       const result = await axios.post("/api/generateCourse", {
         ...formData,
         userId: user.emailAddresses[0].emailAddress,
-      });      // Call the refresh callback if provided
+      });
+      console.log("Course created:", result.data);
       if (onCourseCreated) {
         onCourseCreated();
       }

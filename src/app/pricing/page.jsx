@@ -5,6 +5,62 @@ import { PricingTable } from "@clerk/nextjs";
 import { motion } from "framer-motion";
 import { Check, Crown, Users, Gift } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import Head from "next/head";
+
+// Structured data for pricing page
+const pricingStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "SkillSprint Learning Platform",
+  "description": "AI-powered personalized learning platform with course generation",
+  "brand": {
+    "@type": "Brand",
+    "name": "SkillSprint"
+  },
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Free Plan",
+      "price": "0",
+      "priceCurrency": "USD",
+      "priceValidUntil": "2025-12-31",
+      "availability": "https://schema.org/InStock",
+      "description": "Perfect for getting started with AI course generation",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "Basic AI Course Generation"
+      }
+    },
+    {
+      "@type": "Offer", 
+      "name": "Pro Plan",
+      "price": "19",
+      "priceCurrency": "USD",
+      "billingIncrement": "P1M",
+      "priceValidUntil": "2025-12-31",
+      "availability": "https://schema.org/InStock",
+      "description": "For serious learners with unlimited courses",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "Unlimited AI Course Generation"
+      }
+    },
+    {
+      "@type": "Offer",
+      "name": "Enterprise Plan", 
+      "price": "99",
+      "priceCurrency": "USD",
+      "billingIncrement": "P1M",
+      "priceValidUntil": "2025-12-31",
+      "availability": "https://schema.org/InStock",
+      "description": "For teams and organizations",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "Team Learning Management"
+      }
+    }
+  ]
+};
 
 const PricingPage = () => {
   const { user } = useUser();

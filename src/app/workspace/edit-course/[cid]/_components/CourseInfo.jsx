@@ -64,9 +64,7 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {  const [expande
     });
 
     try {
-      setLoadingInfo(true);
-
-      console.log("Original course data:", course);
+      setLoadingInfo(true);      console.log("Original course data:", course);
 
       // Fix: Ensure we have the correct course data structure for the API
       // The API expects: data.course.courseJson.course.modules (array)
@@ -74,20 +72,34 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {  const [expande
       // Get the number of modules from the course data
       const numberOfModules = course?.noOfModules || courseData?.noOfModules || 5;
       
-      // Create basic modules structure if it doesn't exist
-      const basicModules = Array.from({ length: numberOfModules }, (_, index) => ({
-        moduleName: `Module ${index + 1}`,
-        chapterName: `Module ${index + 1}: Introduction to ${course?.name || course?.courseName || 'Subject'}`,
-        duration: "2 hours",
-        about: `This module covers fundamental concepts related to ${course?.name || course?.courseName || 'the subject'}.`,
-        topics: [`Introduction to ${course?.name || course?.courseName || 'Subject'}`, "Basic concepts", "Practical examples"]
-      }));
+      // Try to get the actual AI-generated modules from the course structure
+      let modulesToUse = null;
+      
+      // Check various possible locations for the modules
+      if (course?.courseJson?.course?.modules && Array.isArray(course.courseJson.course.modules)) {
+        modulesToUse = course.courseJson.course.modules;
+        console.log("Using modules from course.courseJson.course.modules");
+      } else if (course?.courseJson?.modules && Array.isArray(course.courseJson.modules)) {
+        modulesToUse = course.courseJson.modules;
+        console.log("Using modules from course.courseJson.modules");
+      } else if (courseData?.modules && Array.isArray(courseData.modules)) {
+        modulesToUse = courseData.modules;
+        console.log("Using modules from courseData.modules");
+      }
 
-      // Use existing modules if available, otherwise use basic structure
-      const existingModules = course?.courseJson?.course?.modules || courseData?.modules;
-      const modulesToUse = (existingModules && Array.isArray(existingModules) && existingModules.length > 0) 
-        ? existingModules 
-        : basicModules;
+      // If we still don't have modules, create basic structure as fallback
+      if (!modulesToUse || modulesToUse.length === 0) {
+        console.log("No existing modules found, creating basic structure");
+        modulesToUse = Array.from({ length: numberOfModules }, (_, index) => ({
+          moduleName: `Module ${index + 1}`,
+          chapterName: `Module ${index + 1}: Introduction to ${course?.name || course?.courseName || 'Subject'}`,
+          duration: "2 hours",
+          about: `This module covers fundamental concepts related to ${course?.name || course?.courseName || 'the subject'}.`,
+          topics: [`Introduction to ${course?.name || course?.courseName || 'Subject'}`, "Basic concepts", "Practical examples"]
+        }));
+      } else {
+        console.log(`Found ${modulesToUse.length} existing AI-generated modules:`, modulesToUse.map(m => m.moduleName));
+      }
 
       const courseDataToSend = {
         courseId: course?.cid || course?.courseId,
@@ -111,10 +123,10 @@ const CourseInfo = ({ course, loading, error, viewCourse }) => {  const [expande
         bannerImageUrl: course?.bannerImageUrl,
         createdAt: course?.createdAt,
         updatedAt: course?.updatedAt
-      };
-
-      console.log("Sending course data to API:", courseDataToSend);
+      };      console.log("Sending course data to API:", courseDataToSend);
       console.log("Modules being sent:", modulesToUse);
+      console.log("Module names being sent:", modulesToUse.map(m => m.moduleName));
+      console.log("Module topics being sent:", modulesToUse.map(m => ({ name: m.moduleName, topics: m.topics })));
 
       // Start the API request to generate course content
       const result = await axios.post("/api/generate-ai-course", { 

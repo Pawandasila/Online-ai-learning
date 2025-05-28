@@ -141,57 +141,106 @@ export async function generateCertificate(userName, courseName, completionDate) 
     ctx.font = '38px Georgia, serif';
     ctx.fillText('has successfully completed the course', 700, 540);
 
-    // Course name with background highlight
-    const courseNameWidth = ctx.measureText(courseName).width;
+    // Course name with improved sizing and alignment
+    ctx.textAlign = 'center';
     
-    // Background for course name
+    // Function to wrap text if it's too long
+    function wrapText(context, text, maxWidth) {
+      const words = text.split(' ');
+      const lines = [];
+      let currentLine = words[0];
+
+      for (let i = 1; i < words.length; i++) {
+        const word = words[i];
+        const width = context.measureText(currentLine + ' ' + word).width;
+        if (width < maxWidth) {
+          currentLine += ' ' + word;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      }
+      lines.push(currentLine);
+      return lines;
+    }
+
+    // Determine appropriate font size based on course name length
+    let fontSize = 46;
+    let maxWidth = 1000; // Maximum width for course name
+    
+    ctx.font = `bold ${fontSize}px Georgia, serif`;
+    let courseNameWidth = ctx.measureText(courseName).width;
+    
+    // Adjust font size if text is too wide
+    while (courseNameWidth > maxWidth && fontSize > 28) {
+      fontSize -= 2;
+      ctx.font = `bold ${fontSize}px Georgia, serif`;
+      courseNameWidth = ctx.measureText(courseName).width;
+    }
+    
+    // If still too wide, wrap the text
+    const courseLines = wrapText(ctx, courseName, maxWidth);
+    const lineHeight = fontSize + 10;
+    const totalHeight = courseLines.length * lineHeight;
+    const startY = 600 - (totalHeight / 2) + (lineHeight / 2);
+    
+    // Background for course name (adjusted for multiple lines)
+    const backgroundWidth = Math.max(...courseLines.map(line => ctx.measureText(line).width)) + 60;
+    const backgroundHeight = totalHeight + 20;
+    
     const courseGradient = ctx.createLinearGradient(
-      700 - courseNameWidth/2 - 30, 580,
-      700 + courseNameWidth/2 + 30, 620
+      700 - backgroundWidth/2, startY - 20,
+      700 + backgroundWidth/2, startY + backgroundHeight - 20
     );
     courseGradient.addColorStop(0, 'rgba(5, 150, 105, 0.1)');
     courseGradient.addColorStop(0.5, 'rgba(5, 150, 105, 0.2)');
     courseGradient.addColorStop(1, 'rgba(5, 150, 105, 0.1)');
     
     ctx.fillStyle = courseGradient;
-    ctx.fillRect(700 - courseNameWidth/2 - 30, 580, courseNameWidth + 60, 40);
+    ctx.fillRect(700 - backgroundWidth/2, startY - 20, backgroundWidth, backgroundHeight);
     
-    // Course name shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.font = 'bold 46px Georgia, serif';
-    ctx.fillText(courseName, 703, 603);
-    
-    // Course name
-    ctx.fillStyle = '#059669';
-    ctx.font = 'bold 46px Georgia, serif';
-    ctx.fillText(courseName, 700, 600);
+    // Draw course name lines with shadow
+    courseLines.forEach((line, index) => {
+      const y = startY + (index * lineHeight);
+      
+      // Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillText(line, 703, y + 3);
+      
+      // Main text
+      ctx.fillStyle = '#059669';
+      ctx.fillText(line, 700, y);
+    });
 
-    // Completion date with styling
+    // Completion date with proper spacing
+    const dateY = startY + totalHeight + 60;
     ctx.fillStyle = '#6b7280';
     ctx.font = '32px Georgia, serif';
-    ctx.fillText(`Completed on ${completionDate}`, 700, 700);
+    ctx.fillText(`Completed on ${completionDate}`, 700, dateY);
 
     // Signature section with enhanced styling
+    const signatureY = Math.max(dateY + 80, 800); // Ensure minimum distance from bottom
+    
     ctx.textAlign = 'left';
     
     // Left signature area
     ctx.fillStyle = '#374151';
     ctx.font = 'bold 28px Georgia, serif';
-    ctx.fillText('AI Learning Platform', 180, 820);
+    ctx.fillText('Skill Sprint', 180, signatureY);
     
     ctx.fillStyle = '#6b7280';
     ctx.font = '22px Georgia, serif';
-    ctx.fillText('Authorized Signature', 180, 850);
+    ctx.fillText('Authorized Signature', 180, signatureY + 30);
     
     // Signature line with gradient
-    const sigGradient = ctx.createLinearGradient(180, 870, 450, 870);
+    const sigGradient = ctx.createLinearGradient(180, signatureY + 50, 450, signatureY + 50);
     sigGradient.addColorStop(0, '#3b82f6');
     sigGradient.addColorStop(1, 'transparent');
     ctx.strokeStyle = sigGradient;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(180, 870);
-    ctx.lineTo(450, 870);
+    ctx.moveTo(180, signatureY + 50);
+    ctx.lineTo(450, signatureY + 50);
     ctx.stroke();
 
     // Certificate ID and date section
@@ -200,37 +249,40 @@ export async function generateCertificate(userName, courseName, completionDate) 
     
     ctx.fillStyle = '#374151';
     ctx.font = 'bold 24px Georgia, serif';
-    ctx.fillText('Certificate ID:', 1220, 810);
+    ctx.fillText('Certificate ID:', 1220, signatureY - 10);
     
     ctx.fillStyle = '#3b82f6';
     ctx.font = 'bold 26px monospace';
-    ctx.fillText(certificateId, 1220, 840);
+    ctx.fillText(certificateId, 1220, signatureY + 20);
     
     ctx.fillStyle = '#6b7280';
     ctx.font = '20px Georgia, serif';
-    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 1220, 870);
+    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 1220, signatureY + 50);
 
-    // Add seal/badge
+    // Add seal/badge (positioned relative to signature area)
+    const sealX = 1100;
+    const sealY = signatureY - 70;
+    
     ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
     ctx.beginPath();
-    ctx.arc(1100, 750, 60, 0, Math.PI * 2);
+    ctx.arc(sealX, sealY, 60, 0, Math.PI * 2);
     ctx.fill();
     
     ctx.strokeStyle = '#3b82f6';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(1100, 750, 60, 0, Math.PI * 2);
+    ctx.arc(sealX, sealY, 60, 0, Math.PI * 2);
     ctx.stroke();
     
     ctx.beginPath();
-    ctx.arc(1100, 750, 45, 0, Math.PI * 2);
+    ctx.arc(sealX, sealY, 45, 0, Math.PI * 2);
     ctx.stroke();
     
     ctx.fillStyle = '#3b82f6';
     ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('VERIFIED', 1100, 745);
-    ctx.fillText('COMPLETION', 1100, 765);
+    ctx.fillText('VERIFIED', sealX, sealY - 10);
+    ctx.fillText('COMPLETION', sealX, sealY + 10);
 
     // Convert canvas to buffer with high quality
     const buffer = canvas.toBuffer('image/png', { 
