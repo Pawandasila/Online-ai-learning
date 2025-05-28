@@ -12,23 +12,14 @@ cloudinary.config({
 // Helper function to register fonts safely
 function registerFontsSafely() {
   try {
-    // Try to register system fonts if available
-    const fontsToTry = [
-      // Common system serif fonts
-      { family: 'Georgia', path: path.join(process.cwd(), 'public/fonts/georgia.ttf') },
-      { family: 'Times', path: path.join(process.cwd(), 'public/fonts/times.ttf') },
-    ];
-
-    fontsToTry.forEach(font => {
-      try {
-        registerFont(font.path, { family: font.family });
-      } catch (e) {
-        // Font file doesn't exist, will fallback to default
-        console.log(`Font ${font.family} not found, using fallback`);
-      }
-    });
+    // Skip font registration in production environments
+    // node-canvas works with system fonts by default
+    console.log('Using system default fonts for certificate generation');
+    
+    // Note: We'll use generic font family names (serif, sans-serif, monospace)
+    // which are always available in node-canvas
   } catch (error) {
-    console.log('Font registration failed, using default fonts');
+    console.log('Font registration failed, using default fonts:', error);
   }
 }
 
