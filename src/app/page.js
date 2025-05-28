@@ -1,4 +1,3 @@
-// filepath: f:\ai-learning\src\app\page.js
 "use client";
 import {
   Navigation,

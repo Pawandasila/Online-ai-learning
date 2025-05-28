@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import Provider from "./provider";
 import { Toaster } from "sonner";
 import ThemeProviderClient from "./theme-provider";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -102,6 +103,7 @@ export default function RootLayout({ children }) {
         >
           <ThemeProviderClient>
             <Provider>{children}</Provider>
+            <SpeedInsights />
             <Toaster richColors />
           </ThemeProviderClient>
         </body>
