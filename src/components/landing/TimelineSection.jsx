@@ -22,16 +22,22 @@ export function TimelineSection() {
 
   const [activeStep, setActiveStep] = useState(0);
   const [hoveredStep, setHoveredStep] = useState(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted before starting auto-cycle
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Auto-cycle through steps for demonstration
   useEffect(() => {
-    if (inView) {
+    if (inView && mounted) {
       const interval = setInterval(() => {
         setActiveStep((prev) => (prev + 1) % timelineSteps.length);
       }, 3000);
       return () => clearInterval(interval);
     }
-  }, [inView]);
+  }, [inView, mounted]);
 
   const timelineSteps = [
     {

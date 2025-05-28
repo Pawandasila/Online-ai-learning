@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { 
   Brain, 
@@ -9,10 +9,13 @@ import {
   Trophy,
   Star,
   UserPlus,
-  Rocket
+  Rocket,
+  LayoutDashboard
 } from "lucide-react";
 
 export function Navigation() {
+  const { isSignedIn, isLoaded } = useUser();
+
   return (
     <nav className="fixed top-0 z-50 w-full bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -47,20 +50,49 @@ export function Navigation() {
             </Link>
           </div>
 
-          {/* Auth Buttons */}
+          {/* Auth Section */}
           <div className="flex items-center space-x-4">
-            <SignInButton mode="modal">
-              <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                <UserPlus className="w-4 h-4 mr-1" />
-                Sign In
-              </Button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <Button size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
-                <Rocket className="w-4 h-4 mr-1" />
-                Get Started
-              </Button>
-            </SignUpButton>
+            {!isLoaded ? (
+              // Loading state - prevents hydration mismatch
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-8 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="w-20 h-8 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              </div>
+            ) : isSignedIn ? (
+              // Authenticated user UI
+              <div className="flex items-center space-x-3">
+                <Link href="/dashboard" className="hidden sm:flex">
+                  <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+                    <LayoutDashboard className="w-4 h-4 mr-1" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8"
+                    }
+                  }}
+                  afterSignOutUrl="/"
+                />
+              </div>
+            ) : (
+              // Unauthenticated user UI
+              <>
+                <SignInButton mode="modal">
+                  <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Sign In
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
+                    <Rocket className="w-4 h-4 mr-1" />
+                    Get Started
+                  </Button>
+                </SignUpButton>
+              </>
+            )}
           </div>
         </div>
       </div>
