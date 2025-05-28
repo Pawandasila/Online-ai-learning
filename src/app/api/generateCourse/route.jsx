@@ -24,24 +24,10 @@ const getYouTubeVideos = async (topic) => {
       // Use the actual topic name
       searchQuery = topic;
     }
-    console.log(`Searching YouTube for: "${searchQuery}"`);const params = {
-      part: "snippet",
-      q: searchQuery,
-      maxResults: 8,
-      type: "video",
-      key: process.env.YOUTUBE_API_KEY,
-      order: "relevance",
-      videoEmbeddable: "true",
-      safeSearch: "moderate"
-    };
 
     const res = await axios.get(YOUTUBE_BASE_URL, { params });
-      console.log(`YouTube API response for "${topic}":`, {
-      status: res.status,
-      itemsCount: res.data?.items?.length || 0,
-      totalResults: res.data?.pageInfo?.totalResults || 0,
-      firstVideoTitle: res.data?.items?.[0]?.snippet?.title || "None"
-    });const YouTubeVideoList = [];
+      
+     const YouTubeVideoList = [];
     
     if (res.data && Array.isArray(res.data.items)) {
       // Just take the first 4 videos without any filtering
@@ -65,7 +51,7 @@ const getYouTubeVideos = async (topic) => {
       });
     }
 
-    console.log(`Found ${YouTubeVideoList.length} quality videos for: ${topic}`);
+    
     return YouTubeVideoList;
   } catch (error) {
     console.error(`YouTube fetch error for topic "${topic}":`, error.message);
@@ -166,10 +152,10 @@ export async function POST(req) {
   ];
   try {
     // Log the input data being sent to AI
-    console.log("=== AI INPUT DATA ===");
-    console.log("Form Data:", JSON.stringify(formData, null, 2));
-    console.log("Prompt + Data:", PROMPT + JSON.stringify(formData));
-    console.log("=====================");
+    
+    
+    
+    
 
     const response = await ai.models.generateContent({
       model,
@@ -188,10 +174,10 @@ export async function POST(req) {
     }
 
     // Log the raw AI response
-    console.log("=== RAW AI RESPONSE ===");
-    console.log("Response Text:", responseText);
-    console.log("Response Length:", responseText.length);
-    console.log("=======================");
+    
+    
+    
+    
 
     const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
 
@@ -210,37 +196,26 @@ export async function POST(req) {
       }
     }
 
-    // Log the extracted JSON
-    console.log("=== EXTRACTED JSON ===");
-    console.log("JSON String:", jsonString);
-    console.log("======================");
 
     // Parse safely
     const parsedJson = JSON.parse(jsonString);
     
-    // Log the parsed course structure
-    console.log("=== PARSED COURSE STRUCTURE ===");
-    console.log("Course Name:", parsedJson.course?.name);
-    console.log("Modules Count:", parsedJson.modules?.length);
-    console.log("Modules:", parsedJson.modules?.map(m => ({ name: m.moduleName, topics: m.topics?.length })));
-    console.log("===============================");
-
     const ImagePrompt = parsedJson.course.courseBannerPrompt;
-    console.log("Banner Prompt:", ImagePrompt);    
+    
     const bannerImage = await generateImage(ImagePrompt);
 
     // Add YouTube video integration for each module
-    console.log("=== ADDING YOUTUBE VIDEOS ===");
+    
     const enrichedModules = await Promise.all(
       parsedJson.modules.map(async (module, index) => {
         try {
           const moduleName = module.moduleName || `Module ${index + 1}`;
-          console.log(`Fetching YouTube videos for module: ${moduleName}`);
+          
           
           // Use the same YouTube function from generate-ai-course
           const youtubeVideos = await getYouTubeVideos(moduleName);
           
-          console.log(`Found ${youtubeVideos.length} videos for ${moduleName}`);
+          
           
           return {
             ...module,
@@ -256,12 +231,6 @@ export async function POST(req) {
       })
     );
 
-    console.log("=== ENRICHED MODULES WITH VIDEOS ===");
-    enrichedModules.forEach((module, index) => {
-      console.log(`Module ${index + 1}: ${module.moduleName} - ${module.youtubeVideos.length} videos`);
-    });
-    console.log("====================================");
-
     // Update parsedJson with enriched modules
     parsedJson.modules = enrichedModules;
 
@@ -273,16 +242,12 @@ export async function POST(req) {
       parsedJson.course.categories.length > 0
     ) {
       categoriesValue = JSON.stringify(parsedJson.course.categories);
-      console.log(
-        "Using AI-generated categories:",
-        parsedJson.course.categories
-      );
     } else if (formData.categories) {
       categoriesValue = formData.categories;
-      console.log("Using form-provided categories:", formData.categories);
+      
     } else {
       categoriesValue = JSON.stringify(["General"]);
-      console.log("Using default categories: General");
+      
     }    // Map form data fields to schema fields
     const courseData = {
       // Map the form fields to the schema fields
@@ -305,19 +270,7 @@ export async function POST(req) {
       cid: `course-${Date.now()}`,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-    };
-
-    console.log("=== FINAL COURSE DATA ===");
-    console.log("Course Name:", courseData.name);
-    console.log("Modules with Videos:", courseData.courseJson.modules.map(m => ({ 
-      name: m.moduleName, 
-      videoCount: m.youtubeVideos?.length || 0 
-    })));
-    console.log("Total Videos:", courseData.courseJson.modules.reduce((total, m) => total + (m.youtubeVideos?.length || 0), 0));
-    console.log("=========================");
-    // console.log(courseData)
-
-    // Validate required fields
+    };  
     if (!courseData.name) {
       throw new Error("Course name is required");
     }
@@ -325,12 +278,8 @@ export async function POST(req) {
     if (!courseData.userId) {
       throw new Error("User ID is required");
     }    await db.insert(coursesTable).values(courseData);
-
-    console.log("=== COURSE CREATED SUCCESSFULLY ===");
-    console.log("Course ID:", courseData.cid);
-    console.log("Total modules:", courseData.noOfModules);
-    console.log("Total videos added:", courseData.courseJson.modules.reduce((total, m) => total + (m.youtubeVideos?.length || 0), 0));
-    console.log("===================================");
+    
+    
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -380,6 +329,6 @@ const generateImage = async (ImagePrompt) => {
       },
     }
   );
-  console.log(result.data.image);
+  
   return result.data.image;
 };
