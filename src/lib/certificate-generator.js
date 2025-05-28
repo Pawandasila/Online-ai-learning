@@ -1,6 +1,4 @@
-import { createCanvas, loadImage, registerFont } from 'canvas';
 import { v2 as cloudinary } from 'cloudinary';
-import path from 'path';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -9,316 +7,163 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Helper function to register fonts safely
-function registerFontsSafely() {
-  try {
-    // Skip font registration in production environments
-    // node-canvas works with system fonts by default
-    console.log('Using system default fonts for certificate generation');
-    
-    // Note: We'll use generic font family names (serif, sans-serif, monospace)
-    // which are always available in node-canvas
-  } catch (error) {
-    console.log('Font registration failed, using default fonts:', error);
-  }
+// Helper function to generate SVG certificate
+function generateCertificateSVG(userName, courseName, completionDate, certificateId) {
+  const currentDate = new Date().toLocaleDateString();
+  
+  return `
+    <svg width="1400" height="1000" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Background Gradient -->
+        <radialGradient id="backgroundGrad" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="30%" stop-color="#f8fafc"/>
+          <stop offset="70%" stop-color="#e2e8f0"/>
+          <stop offset="100%" stop-color="#cbd5e1"/>
+        </radialGradient>
+        
+        <!-- Border Gradient -->
+        <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#3b82f6"/>
+          <stop offset="50%" stop-color="#1d4ed8"/>
+          <stop offset="100%" stop-color="#1e40af"/>
+        </linearGradient>
+        
+        <!-- Line Gradient -->
+        <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="transparent"/>
+          <stop offset="10%" stop-color="#3b82f6"/>
+          <stop offset="50%" stop-color="#1d4ed8"/>
+          <stop offset="90%" stop-color="#3b82f6"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </linearGradient>
+
+        <!-- Course Name Background -->
+        <linearGradient id="courseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="rgba(5, 150, 105, 0.1)"/>
+          <stop offset="50%" stop-color="rgba(5, 150, 105, 0.2)"/>
+          <stop offset="100%" stop-color="rgba(5, 150, 105, 0.1)"/>
+        </linearGradient>
+
+        <!-- Signature Gradient -->
+        <linearGradient id="sigGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#3b82f6"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </linearGradient>
+
+        <!-- Drop Shadow Filter -->
+        <filter id="dropshadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="3" dy="3" stdDeviation="3" flood-opacity="0.1"/>
+        </filter>
+      </defs>
+
+      <!-- Background -->
+      <rect width="1400" height="1000" fill="url(#backgroundGrad)"/>
+      
+      <!-- Texture Pattern -->
+      ${Array.from({length: 35}, (_, i) => 
+        Array.from({length: 25}, (_, j) => 
+          `<circle cx="${i * 40 + 20}" cy="${j * 40 + 20}" r="0.5" fill="#64748b" opacity="0.05"/>`
+        ).join('')
+      ).join('')}
+
+      <!-- Main Border -->
+      <rect x="30" y="30" width="1340" height="940" fill="none" stroke="url(#borderGrad)" stroke-width="12"/>
+      
+      <!-- Inner Borders -->
+      <rect x="50" y="50" width="1300" height="900" fill="none" stroke="#60a5fa" stroke-width="4"/>
+      <rect x="70" y="70" width="1260" height="860" fill="none" stroke="#93c5fd" stroke-width="2"/>
+
+      <!-- Corner Decorations -->
+      <circle cx="150" cy="150" r="30" fill="url(#borderGrad)"/>
+      <circle cx="1250" cy="150" r="30" fill="url(#borderGrad)"/>
+      <circle cx="150" cy="850" r="30" fill="url(#borderGrad)"/>
+      <circle cx="1250" cy="850" r="30" fill="url(#borderGrad)"/>
+
+      <!-- Title with Shadow -->
+      <text x="703" y="183" text-anchor="middle" font-family="serif" font-size="72" font-weight="bold" fill="rgba(0,0,0,0.1)">CERTIFICATE</text>
+      <text x="700" y="180" text-anchor="middle" font-family="serif" font-size="72" font-weight="bold" fill="#1e40af">CERTIFICATE</text>
+      
+      <text x="703" y="233" text-anchor="middle" font-family="serif" font-size="42" font-weight="bold" fill="rgba(0,0,0,0.1)">OF COMPLETION</text>
+      <text x="700" y="230" text-anchor="middle" font-family="serif" font-size="42" font-weight="bold" fill="#1e40af">OF COMPLETION</text>
+
+      <!-- Decorative Line -->
+      <line x1="250" y1="280" x2="1150" y2="280" stroke="url(#lineGrad)" stroke-width="4"/>
+      
+      <!-- Diamond -->
+      <g transform="translate(700,280) rotate(45)">
+        <rect x="-8" y="-8" width="16" height="16" fill="#3b82f6"/>
+      </g>
+
+      <!-- "This is to certify that" -->
+      <text x="700" y="360" text-anchor="middle" font-family="serif" font-size="38" fill="#4b5563">This is to certify that</text>
+
+      <!-- User Name with Shadow -->
+      <text x="703" y="443" text-anchor="middle" font-family="serif" font-size="58" font-weight="bold" fill="rgba(0,0,0,0.1)">${userName}</text>
+      <text x="700" y="440" text-anchor="middle" font-family="serif" font-size="58" font-weight="bold" fill="#1e40af">${userName}</text>
+      
+      <!-- Name Underline -->
+      <line x1="${700 - userName.length * 15}" y1="470" x2="${700 + userName.length * 15}" y2="470" stroke="#3b82f6" stroke-width="3"/>
+
+      <!-- Course completion text -->
+      <text x="700" y="540" text-anchor="middle" font-family="serif" font-size="38" fill="#4b5563">has successfully completed the course</text>
+
+      <!-- Course Name Background -->
+      <rect x="${700 - Math.min(courseName.length * 12, 500)}" y="580" width="${Math.min(courseName.length * 24, 1000)}" height="60" fill="url(#courseGrad)" rx="10"/>
+      
+      <!-- Course Name with Shadow -->
+      <text x="703" y="613" text-anchor="middle" font-family="serif" font-size="46" font-weight="bold" fill="rgba(0,0,0,0.1)">${courseName}</text>
+      <text x="700" y="610" text-anchor="middle" font-family="serif" font-size="46" font-weight="bold" fill="#059669">${courseName}</text>
+
+      <!-- Completion Date -->
+      <text x="700" y="700" text-anchor="middle" font-family="serif" font-size="32" fill="#6b7280">Completed on ${completionDate}</text>
+
+      <!-- Signature Section -->
+      <text x="180" y="800" font-family="serif" font-size="28" font-weight="bold" fill="#374151">Skill Sprint</text>
+      <text x="180" y="830" font-family="serif" font-size="22" fill="#6b7280">Authorized</text>
+      <line x1="180" y1="850" x2="450" y2="850" stroke="url(#sigGrad)" stroke-width="2"/>
+
+      <!-- Certificate ID -->
+      <text x="1220" y="790" text-anchor="end" font-family="serif" font-size="24" font-weight="bold" fill="#374151">Certificate ID:</text>
+      <text x="1220" y="820" text-anchor="end" font-family="monospace" font-size="26" font-weight="bold" fill="#3b82f6">${certificateId}</text>
+      <text x="1220" y="850" text-anchor="end" font-family="serif" font-size="20" fill="#6b7280">Generated: ${currentDate}</text>
+
+      <!-- Seal -->
+      <circle cx="1100" cy="730" r="60" fill="rgba(59, 130, 246, 0.1)" stroke="#3b82f6" stroke-width="3"/>
+      <circle cx="1100" cy="730" r="45" fill="none" stroke="#3b82f6" stroke-width="3"/>
+      <text x="1100" y="720" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#3b82f6">VERIFIED</text>
+      <text x="1100" y="740" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#3b82f6">COMPLETION</text>
+    </svg>
+  `;
 }
 
 export async function generateCertificate(userName, courseName, completionDate) {
   console.log(userName, courseName, completionDate);
+  
   try {
     // Validate input parameters
     if (!userName || !courseName || !completionDate) {
       throw new Error(`Missing required parameters: userName=${userName}, courseName=${courseName}, completionDate=${completionDate}`);
     }
 
-    // Register fonts safely
-    registerFontsSafely();
-
     console.log('Generating certificate for:', { userName, courseName, completionDate });
 
-    // Create canvas with higher resolution for better quality
-    const canvas = createCanvas(1400, 1000);
-    const ctx = canvas.getContext('2d');
-
-    // Enable anti-aliasing for smoother text
-    ctx.textBaseline = 'middle';
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-
-    // Create sophisticated background gradient
-    const backgroundGradient = ctx.createRadialGradient(700, 500, 0, 700, 500, 800);
-    backgroundGradient.addColorStop(0, '#ffffff');
-    backgroundGradient.addColorStop(0.3, '#f8fafc');
-    backgroundGradient.addColorStop(0.7, '#e2e8f0');
-    backgroundGradient.addColorStop(1, '#cbd5e1');
-    ctx.fillStyle = backgroundGradient;
-    ctx.fillRect(0, 0, 1400, 1000);
-
-    // Add subtle texture pattern
-    ctx.globalAlpha = 0.05;
-    for (let i = 0; i < 1400; i += 40) {
-      for (let j = 0; j < 1000; j += 40) {
-        ctx.fillStyle = '#64748b';
-        ctx.fillRect(i, j, 1, 1);
-      }
-    }
-    ctx.globalAlpha = 1;
-
-    // Main decorative border with gradient
-    const borderGradient = ctx.createLinearGradient(0, 0, 1400, 1000);
-    borderGradient.addColorStop(0, '#3b82f6');
-    borderGradient.addColorStop(0.5, '#1d4ed8');
-    borderGradient.addColorStop(1, '#1e40af');
-    
-    ctx.strokeStyle = borderGradient;
-    ctx.lineWidth = 12;
-    ctx.strokeRect(30, 30, 1340, 940);
-
-    // Inner decorative border
-    ctx.strokeStyle = '#60a5fa';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(50, 50, 1300, 900);
-
-    // Additional elegant inner border
-    ctx.strokeStyle = '#93c5fd';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(70, 70, 1260, 860);
-
-    // Top decorative elements
-    ctx.fillStyle = borderGradient;
-    ctx.beginPath();
-    ctx.arc(150, 150, 30, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(1250, 150, 30, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(150, 850, 30, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(1250, 850, 30, 0, Math.PI * 2);
-    ctx.fill();    // Certificate header with shadow effect
-    ctx.textAlign = 'center';
-    
-    // Shadow for title
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.font = 'bold 72px serif';
-    ctx.fillText('CERTIFICATE', 703, 183);
-    ctx.font = 'bold 42px serif';
-    ctx.fillText('OF COMPLETION', 703, 233);
-    
-    // Main title
-    ctx.fillStyle = '#1e40af';
-    ctx.font = 'bold 72px serif';
-    ctx.fillText('CERTIFICATE', 700, 180);
-    ctx.font = 'bold 42px serif';
-    ctx.fillText('OF COMPLETION', 700, 230);
-
-    console.log('Certificate title rendered');
-
-    // Elegant decorative line with ornaments
-    const lineGradient = ctx.createLinearGradient(250, 280, 1150, 280);
-    lineGradient.addColorStop(0, 'transparent');
-    lineGradient.addColorStop(0.1, '#3b82f6');
-    lineGradient.addColorStop(0.5, '#1d4ed8');
-    lineGradient.addColorStop(0.9, '#3b82f6');
-    lineGradient.addColorStop(1, 'transparent');
-    
-    ctx.strokeStyle = lineGradient;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(250, 280);
-    ctx.lineTo(1150, 280);
-    ctx.stroke();
-
-    // Decorative diamonds
-    ctx.fillStyle = '#3b82f6';
-    ctx.save();
-    ctx.translate(700, 280);
-    ctx.rotate(Math.PI / 4);
-    ctx.fillRect(-8, -8, 16, 16);
-    ctx.restore();    // "This is to certify that" text
-    ctx.fillStyle = '#4b5563';
-    ctx.font = '38px serif';
-    ctx.fillText('This is to certify that', 700, 360);
-
-    console.log('Certify text rendered');
-
-    // User name with elegant styling and shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.font = 'bold 58px serif';
-    ctx.fillText(userName, 703, 443);
-    
-    ctx.fillStyle = '#1e40af';
-    ctx.font = 'bold 58px serif';
-    ctx.fillText(userName, 700, 440);
-
-    console.log('User name rendered:', userName);
-
-    // Underline for name
-    const nameWidth = ctx.measureText(userName).width;
-    ctx.strokeStyle = '#3b82f6';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(700 - nameWidth/2 - 20, 470);
-    ctx.lineTo(700 + nameWidth/2 + 20, 470);
-    ctx.stroke();    // Course completion text
-    ctx.fillStyle = '#4b5563';
-    ctx.font = '38px serif';
-    ctx.fillText('has successfully completed the course', 700, 540);
-
-    // Course name with improved sizing and alignment
-    ctx.textAlign = 'center';
-    
-    // Function to wrap text if it's too long
-    function wrapText(context, text, maxWidth) {
-      const words = text.split(' ');
-      const lines = [];
-      let currentLine = words[0];
-
-      for (let i = 1; i < words.length; i++) {
-        const word = words[i];
-        const width = context.measureText(currentLine + ' ' + word).width;
-        if (width < maxWidth) {
-          currentLine += ' ' + word;
-        } else {
-          lines.push(currentLine);
-          currentLine = word;
-        }
-      }
-      lines.push(currentLine);
-      return lines;
-    }    // Determine appropriate font size based on course name length
-    let fontSize = 46;
-    let maxWidth = 1000; // Maximum width for course name
-    
-    ctx.font = `bold ${fontSize}px serif`;
-    let courseNameWidth = ctx.measureText(courseName).width;
-    
-    // Adjust font size if text is too wide
-    while (courseNameWidth > maxWidth && fontSize > 28) {
-      fontSize -= 2;
-      ctx.font = `bold ${fontSize}px serif`;
-      courseNameWidth = ctx.measureText(courseName).width;
-    }
-    
-    // If still too wide, wrap the text
-    const courseLines = wrapText(ctx, courseName, maxWidth);
-    const lineHeight = fontSize + 10;
-    const totalHeight = courseLines.length * lineHeight;
-    const startY = 600 - (totalHeight / 2) + (lineHeight / 2);
-    
-    // Background for course name (adjusted for multiple lines)
-    const backgroundWidth = Math.max(...courseLines.map(line => ctx.measureText(line).width)) + 60;
-    const backgroundHeight = totalHeight + 20;
-    
-    const courseGradient = ctx.createLinearGradient(
-      700 - backgroundWidth/2, startY - 20,
-      700 + backgroundWidth/2, startY + backgroundHeight - 20
-    );
-    courseGradient.addColorStop(0, 'rgba(5, 150, 105, 0.1)');
-    courseGradient.addColorStop(0.5, 'rgba(5, 150, 105, 0.2)');
-    courseGradient.addColorStop(1, 'rgba(5, 150, 105, 0.1)');
-    
-    ctx.fillStyle = courseGradient;
-    ctx.fillRect(700 - backgroundWidth/2, startY - 20, backgroundWidth, backgroundHeight);
-    
-    // Draw course name lines with shadow
-    courseLines.forEach((line, index) => {
-      const y = startY + (index * lineHeight);
-      
-      // Shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-      ctx.fillText(line, 703, y + 3);
-        // Main text
-      ctx.fillStyle = '#059669';
-      ctx.fillText(line, 700, y);
-    });
-
-    console.log('Course name rendered:', courseName);
-
-    // Completion date with proper spacing
-    const dateY = startY + totalHeight + 60;
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '32px serif';
-    ctx.fillText(`Completed on ${completionDate}`, 700, dateY);
-
-    console.log('Completion date rendered:', completionDate);
-
-    // Signature section with enhanced styling
-    const signatureY = Math.max(dateY + 80, 800); // Ensure minimum distance from bottom
-    
-    ctx.textAlign = 'left';
-      // Left signature area
-    ctx.fillStyle = '#374151';
-    ctx.font = 'bold 28px serif';
-    ctx.fillText('Skill Sprint', 180, signatureY);
-    
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '22px serif';
-    ctx.fillText('Authorized', 180, signatureY + 30);
-    
-    // Signature line with gradient
-    const sigGradient = ctx.createLinearGradient(180, signatureY + 50, 450, signatureY + 50);
-    sigGradient.addColorStop(0, '#3b82f6');
-    sigGradient.addColorStop(1, 'transparent');
-    ctx.strokeStyle = sigGradient;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(180, signatureY + 50);
-    ctx.lineTo(450, signatureY + 50);
-    ctx.stroke();
-
-    // Certificate ID and date section
-    ctx.textAlign = 'right';
+    // Generate unique certificate ID
     const certificateId = `CERT-${Date.now().toString(36).toUpperCase()}`;
-      ctx.fillStyle = '#374151';
-    ctx.font = 'bold 24px serif';
-    ctx.fillText('Certificate ID:', 1220, signatureY - 10);
-    
-    ctx.fillStyle = '#3b82f6';
-    ctx.font = 'bold 26px monospace';
-    ctx.fillText(certificateId, 1220, signatureY + 20);
-    
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '20px serif';
-    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 1220, signatureY + 50);
 
-    // Add seal/badge (positioned relative to signature area)
-    const sealX = 1100;
-    const sealY = signatureY - 70;
-    
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
-    ctx.beginPath();
-    ctx.arc(sealX, sealY, 60, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.strokeStyle = '#3b82f6';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(sealX, sealY, 60, 0, Math.PI * 2);
-    ctx.stroke();
-    
-    ctx.beginPath();
-    ctx.arc(sealX, sealY, 45, 0, Math.PI * 2);
-    ctx.stroke();
-      ctx.fillStyle = '#3b82f6';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('VERIFIED', sealX, sealY - 10);
-    ctx.fillText('COMPLETION', sealX, sealY + 10);
+    // Generate SVG certificate
+    const svgContent = generateCertificateSVG(userName, courseName, completionDate, certificateId);
 
-    console.log('Certificate generation completed successfully');
+    // For Vercel deployment, we'll use a different approach
+    // Convert SVG to base64 and use Cloudinary's text overlay feature
+    // Or use a third-party service that works in serverless environments
+    
+    console.log('SVG certificate generated');
 
-    // Convert canvas to buffer with high quality
-    const buffer = canvas.toBuffer('image/png', { 
-      compressionLevel: 6, 
-      filters: canvas.PNG_FILTER_NONE 
-    });
-
-    // Upload to Cloudinary in the specified folder
+    // Upload SVG to Cloudinary and convert to PNG
     const uploadResult = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
+      cloudinary.uploader.upload(
+        `data:image/svg+xml;base64,${Buffer.from(svgContent).toString('base64')}`,
         {
           resource_type: 'image',
           public_id: `ai-learning-certificate/cert_${userName.replace(/\s+/g, '_')}_${Date.now()}`,
@@ -326,12 +171,20 @@ export async function generateCertificate(userName, courseName, completionDate) 
           quality: 'auto:best',
           fetch_format: 'auto',
           flags: 'progressive',
+          transformation: [
+            { width: 1400, height: 1000, crop: 'fit', format: 'png' }
+          ]
         },
         (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            reject(error);
+          } else {
+            console.log('Certificate uploaded successfully:', result.secure_url);
+            resolve(result);
+          }
         }
-      ).end(buffer);
+      );
     });
 
     return {
@@ -343,6 +196,6 @@ export async function generateCertificate(userName, courseName, completionDate) 
     };
   } catch (error) {
     console.error('Certificate generation error:', error);
-    throw new Error('Failed to generate certificate');
+    throw new Error('Failed to generate certificate: ' + error.message);
   }
 }
