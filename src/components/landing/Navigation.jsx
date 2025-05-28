@@ -61,7 +61,7 @@ export function Navigation() {
             ) : isSignedIn ? (
               // Authenticated user UI
               <div className="flex items-center space-x-3">
-                <Link href="/dashboard" className="hidden sm:flex">
+                <Link href="/workspace" className="hidden sm:flex">
                   <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                     <LayoutDashboard className="w-4 h-4 mr-1" />
                     Dashboard
