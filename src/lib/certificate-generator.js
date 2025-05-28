@@ -24,6 +24,7 @@ function registerFontsSafely() {
 }
 
 export async function generateCertificate(userName, courseName, completionDate) {
+  console.log(userName, courseName, completionDate);
   try {
     // Validate input parameters
     if (!userName || !courseName || !completionDate) {
