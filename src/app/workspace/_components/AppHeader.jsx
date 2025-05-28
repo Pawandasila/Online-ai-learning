@@ -10,7 +10,6 @@ const AppHeader = ({ hideSidebar = false }) => {
       {!hideSidebar && (
         <SidebarTrigger className="text-gray-500 hover:text-gray-800 transition-colors" />
       )}
-
       <div className="relative flex-1 max-w-md">
         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
           <Search className="h-4 w-4 text-gray-400" />
@@ -20,7 +19,8 @@ const AppHeader = ({ hideSidebar = false }) => {
           className="w-full pl-10 pr-3 py-2 bg-white/10 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           placeholder="Search workspace..."
         />
-      </div>      <div className="flex items-center gap-4 ml-auto">
+      </div>{" "}
+      <div className="flex items-center gap-4 ml-auto">
         <Link href="/pricing">
           <button className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-sm hover:shadow-md">
             <Crown className="w-4 h-4" />
