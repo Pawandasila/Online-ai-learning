@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary } from "cloudinary";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -8,9 +8,14 @@ cloudinary.config({
 });
 
 // Helper function to generate SVG certificate
-function generateCertificateSVG(userName, courseName, completionDate, certificateId) {
+function generateCertificateSVG(
+  userName,
+  courseName,
+  completionDate,
+  certificateId
+) {
   const currentDate = new Date().toLocaleDateString();
-  
+
   return `
     <svg width="1400" height="1000" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -61,11 +66,15 @@ function generateCertificateSVG(userName, courseName, completionDate, certificat
       <rect width="1400" height="1000" fill="url(#backgroundGrad)"/>
       
       <!-- Texture Pattern -->
-      ${Array.from({length: 35}, (_, i) => 
-        Array.from({length: 25}, (_, j) => 
-          `<circle cx="${i * 40 + 20}" cy="${j * 40 + 20}" r="0.5" fill="#64748b" opacity="0.05"/>`
-        ).join('')
-      ).join('')}
+      ${Array.from({ length: 35 }, (_, i) =>
+        Array.from(
+          { length: 25 },
+          (_, j) =>
+            `<circle cx="${i * 40 + 20}" cy="${
+              j * 40 + 20
+            }" r="0.5" fill="#64748b" opacity="0.05"/>`
+        ).join("")
+      ).join("")}
 
       <!-- Main Border -->
       <rect x="30" y="30" width="1340" height="940" fill="none" stroke="url(#borderGrad)" stroke-width="12"/>
@@ -103,17 +112,23 @@ function generateCertificateSVG(userName, courseName, completionDate, certificat
       <text x="700" y="440" text-anchor="middle" font-family="serif" font-size="58" font-weight="bold" fill="#1e40af">${userName}</text>
       
       <!-- Name Underline -->
-      <line x1="${700 - userName.length * 15}" y1="470" x2="${700 + userName.length * 15}" y2="470" stroke="#3b82f6" stroke-width="3"/>
+      <line x1="${700 - userName.length * 15}" y1="470" x2="${
+    700 + userName.length * 15
+  }" y2="470" stroke="#3b82f6" stroke-width="3"/>
 
       <!-- Course completion text -->
-      <text x="700" y="540" text-anchor="middle" font-family="serif" font-size="38" fill="#4b5563">has successfully completed the course</text>
-
-      <!-- Course Name Background -->
-      <rect x="${700 - Math.min(courseName.length * 12, 500)}" y="580" width="${Math.min(courseName.length * 24, 1000)}" height="60" fill="url(#courseGrad)" rx="10"/>
+      <text x="700" y="540" text-anchor="middle" font-family="serif" font-size="38" fill="#4b5563">has successfully completed the course</text>      <!-- Course Name Background -->
+      <rect x="200" y="580" width="1000" height="60" fill="url(#courseGrad)" rx="10"/>
       
       <!-- Course Name with Shadow -->
-      <text x="703" y="613" text-anchor="middle" font-family="serif" font-size="46" font-weight="bold" fill="rgba(0,0,0,0.1)">${courseName}</text>
-      <text x="700" y="610" text-anchor="middle" font-family="serif" font-size="46" font-weight="bold" fill="#059669">${courseName}</text>
+      <text x="703" y="613" text-anchor="middle" font-family="serif" font-size="${Math.max(
+        16,
+        Math.min(46, 1000 / Math.max(20, courseName.length))
+      )}px" font-weight="bold" fill="rgba(0,0,0,0.1)">${courseName}</text>
+      <text x="700" y="610" text-anchor="middle" font-family="serif" font-size="${Math.max(
+        16,
+        Math.min(46, 1000 / Math.max(20, courseName.length))
+      )}px" font-weight="bold" fill="#059669">${courseName}</text>
 
       <!-- Completion Date -->
       <text x="700" y="700" text-anchor="middle" font-family="serif" font-size="32" fill="#6b7280">Completed on ${completionDate}</text>
@@ -137,50 +152,73 @@ function generateCertificateSVG(userName, courseName, completionDate, certificat
   `;
 }
 
-export async function generateCertificate(userName, courseName, completionDate) {
+export async function generateCertificate(
+  userName,
+  courseName,
+  completionDate
+) {
   console.log(userName, courseName, completionDate);
-  
+
   try {
     // Validate input parameters
     if (!userName || !courseName || !completionDate) {
-      throw new Error(`Missing required parameters: userName=${userName}, courseName=${courseName}, completionDate=${completionDate}`);
+      throw new Error(
+        `Missing required parameters: userName=${userName}, courseName=${courseName}, completionDate=${completionDate}`
+      );
     }
 
-    console.log('Generating certificate for:', { userName, courseName, completionDate });
+    console.log("Generating certificate for:", {
+      userName,
+      courseName,
+      completionDate,
+    });
 
     // Generate unique certificate ID
     const certificateId = `CERT-${Date.now().toString(36).toUpperCase()}`;
 
     // Generate SVG certificate
-    const svgContent = generateCertificateSVG(userName, courseName, completionDate, certificateId);
+    const svgContent = generateCertificateSVG(
+      userName,
+      courseName,
+      completionDate,
+      certificateId
+    );
 
     // For Vercel deployment, we'll use a different approach
     // Convert SVG to base64 and use Cloudinary's text overlay feature
     // Or use a third-party service that works in serverless environments
-    
-    console.log('SVG certificate generated');
+
+    console.log("SVG certificate generated");
 
     // Upload SVG to Cloudinary and convert to PNG
     const uploadResult = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload(
-        `data:image/svg+xml;base64,${Buffer.from(svgContent).toString('base64')}`,
+        `data:image/svg+xml;base64,${Buffer.from(svgContent).toString(
+          "base64"
+        )}`,
         {
-          resource_type: 'image',
-          public_id: `ai-learning-certificate/cert_${userName.replace(/\s+/g, '_')}_${Date.now()}`,
-          format: 'png',
-          quality: 'auto:best',
-          fetch_format: 'auto',
-          flags: 'progressive',
+          resource_type: "image",
+          public_id: `ai-learning-certificate/cert_${userName.replace(
+            /\s+/g,
+            "_"
+          )}_${Date.now()}`,
+          format: "png",
+          quality: "auto:best",
+          fetch_format: "auto",
+          flags: "progressive",
           transformation: [
-            { width: 1400, height: 1000, crop: 'fit', format: 'png' }
-          ]
+            { width: 1400, height: 1000, crop: "fit", format: "png" },
+          ],
         },
         (error, result) => {
           if (error) {
-            console.error('Cloudinary upload error:', error);
+            console.error("Cloudinary upload error:", error);
             reject(error);
           } else {
-            console.log('Certificate uploaded successfully:', result.secure_url);
+            console.log(
+              "Certificate uploaded successfully:",
+              result.secure_url
+            );
             resolve(result);
           }
         }
@@ -195,7 +233,7 @@ export async function generateCertificate(userName, courseName, completionDate) 
       height: 1000,
     };
   } catch (error) {
-    console.error('Certificate generation error:', error);
-    throw new Error('Failed to generate certificate: ' + error.message);
+    console.error("Certificate generation error:", error);
+    throw new Error("Failed to generate certificate: " + error.message);
   }
 }
